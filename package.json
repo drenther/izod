@@ -1,7 +1,7 @@
 {
   "name": "izod-monorepo",
-  "private": true,
-  "version": "0.0.0",
+  "private": false,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
@@ -10,5 +10,14 @@
   "devDependencies": {
     "prettier": "3.0.1",
     "turbo": "1.10.12"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/drenther/izod.git"
+  },
+  "homepage": "https://github.com/drenther/izod",
+  "author": {
+    "name": "Soumyajit Pathak"
+  },
+  "license": "MIT"
 }

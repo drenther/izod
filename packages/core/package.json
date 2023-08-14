@@ -1,7 +1,7 @@
 {
   "name": "@izod/core",
-  "private": true,
-  "version": "0.0.0",
+  "private": false,
+  "version": "0.1.0",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -33,5 +33,14 @@
   "dependencies": {
     "crelt": "1.0.6",
     "type-fest": "4.2.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/drenther/izod.git"
+  },
+  "homepage": "https://github.com/drenther/izod",
+  "author": {
+    "name": "Soumyajit Pathak"
+  },
+  "license": "MIT"
 }
