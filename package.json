@@ -1,7 +1,7 @@
 {
   "name": "izod-monorepo",
   "private": false,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
@@ -19,5 +19,11 @@
   "author": {
     "name": "Soumyajit Pathak"
   },
+  "keywords": [
+    "react",
+    "iframe",
+    "typescript",
+    "zod"
+  ],
   "license": "MIT"
 }

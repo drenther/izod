@@ -1,7 +1,7 @@
 {
   "name": "@izod/core",
   "private": false,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -42,5 +42,10 @@
   "author": {
     "name": "Soumyajit Pathak"
   },
+  "keywords": [
+    "iframe",
+    "typescript",
+    "zod"
+  ],
   "license": "MIT"
 }
