@@ -6,6 +6,11 @@ function App() {
   const { api } = parent.useConnect({
     inboundEvents: parentOriginEvents,
     outboundEvents: childOriginEvents,
+    onHandshakeComplete(api) {
+      api.on('askQuestion', (data) => {
+        console.log('Question: ', data.question);
+      });
+    },
   });
 
   const [data, setData] = useState<string[]>([]);

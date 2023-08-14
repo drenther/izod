@@ -23,7 +23,9 @@ interface UseChildIframeParams<
   T extends HTMLElement | Element,
 > extends CreateChildParams<IE, OE, T> {
   onHandshakeComplete?: (
-    api: Awaited<ReturnType<CreateChildParamsWrapper<IE, OE, T>['wrapped']>>,
+    api: NonNullable<
+      Awaited<ReturnType<CreateChildParamsWrapper<IE, OE, T>['wrapped']>>
+    >,
   ) => void;
   onHandshakeError?: (error: Error) => void;
   destroyOnUnmount?: boolean;
@@ -118,7 +120,9 @@ class ConnectToParentParamstWrapper<IE extends EventMap, OE extends EventMap> {
 interface UseParentParams<IE extends EventMap, OE extends EventMap>
   extends ConnectToParentParams<IE, OE> {
   onHandshakeComplete?: (
-    api: Awaited<ReturnType<ConnectToParentParamstWrapper<IE, OE>['wrapped']>>,
+    api: NonNullable<
+      Awaited<ReturnType<ConnectToParentParamstWrapper<IE, OE>['wrapped']>>
+    >,
   ) => void;
   onHandshakeError?: (error: Error) => void;
 }
