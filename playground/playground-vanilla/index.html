@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+
+    <style>
+      .child-container {
+        height: 400;
+        width: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <section id="parent-control-panel">
+        <form id="parent-control-panel-form">
+          <div>
+            <input
+              type="text"
+              placeholder="Enter your name"
+              id="parent-control-panel-input"
+            />
+          </div>
+          <div>
+            <label for="parent-control-panel-question-radio">Question</label>
+            <input
+              type="radio"
+              name="type"
+              id="parent-control-panel-question-radio"
+              checked="true"
+            />
+
+            <label for="parent-control-panel-shout-radio">Shout</label>
+            <input
+              type="radio"
+              name="type"
+              id="parent-control-panel-shout-radio"
+            />
+          </div>
+
+          <button type="submit">Send Greetings</button>
+        </form>
+
+        <div>
+          <h6>Messages from child</h6>
+          <div id="child-message-list"></div>
+        </div>
+      </section>
+      <section id="child-container"></section>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

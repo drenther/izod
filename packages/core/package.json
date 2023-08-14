@@ -1,0 +1,37 @@
+{
+  "name": "@izod/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "20.4.8",
+    "typescript": "5.0.2",
+    "vite": "4.4.5",
+    "vite-plugin-dts": "3.5.1",
+    "zod": "3.21.4"
+  },
+  "peerDependencies": {
+    "zod": "^2.0.0 || ^3.0.0"
+  },
+  "dependencies": {
+    "crelt": "1.0.6",
+    "type-fest": "4.2.0"
+  }
+}
