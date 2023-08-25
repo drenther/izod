@@ -98,7 +98,9 @@ export interface CreateChildParams<
 > {
   container: T;
   url: string;
-  iframeAttributes?: Parameters<typeof crelt>[1];
+  iframeAttributes?: {
+    [attr: string]: any;
+  };
   inboundEvents?: IE;
   outboundEvents?: OE;
   handshakeOptions?: HandshakeOptions;
@@ -116,7 +118,7 @@ export async function createChild<
   handshakeOptions = {},
 }: CreateChildParams<IE, OE, T>) {
   const parent = window;
-  const iframe = crelt('iframe', iframeAttributes) as HTMLIFrameElement;
+  const iframe = crelt('iframe', iframeAttributes as any) as HTMLIFrameElement;
   iframe.src = url;
 
   const childOrigin = resolveOrigin(url);
@@ -341,13 +343,12 @@ export interface ConnectToParentParams<
   inboundEvents?: IE;
   outboundEvents?: OE;
 }
-export async function connectToParent<
-  IE extends EventMap,
-  OE extends EventMap,
->({
-  inboundEvents = {} as IE,
-  outboundEvents = {} as OE,
-}: ConnectToParentParams<IE, OE>) {
+export async function connectToParent<IE extends EventMap, OE extends EventMap>(
+  {
+    inboundEvents = {} as IE,
+    outboundEvents = {} as OE,
+  }: ConnectToParentParams<IE, OE> = {} as ConnectToParentParams<IE, OE>,
+) {
   const child = window;
 
   type InboundEventName = keyof typeof inboundEvents;

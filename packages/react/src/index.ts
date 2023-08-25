@@ -126,11 +126,13 @@ interface UseParentParams<IE extends EventMap, OE extends EventMap>
   ) => void;
   onHandshakeError?: (error: Error) => void;
 }
-function useConnectToParent<IE extends EventMap, OE extends EventMap>({
-  onHandshakeComplete,
-  onHandshakeError,
-  ...props
-}: UseParentParams<IE, OE>) {
+function useConnectToParent<IE extends EventMap, OE extends EventMap>(
+  {
+    onHandshakeComplete,
+    onHandshakeError,
+    ...props
+  }: UseParentParams<IE, OE> = {} as UseParentParams<IE, OE>,
+) {
   const handshakeState = useAsync(() => connectToParent(props), []);
 
   const onHandshakeCompleteCallbackRef =
