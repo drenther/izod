@@ -3,10 +3,9 @@ import crelt from 'crelt';
 
 export const eventContentType = 'application/x-izod+json' as const;
 
-const log: typeof console.info =
-  process.env.NODE_ENV === 'development'
-    ? console.info.bind(console)
-    : () => {};
+const createLogger = (
+  enabled: boolean = process.env.NODE_ENV === 'development',
+): typeof console.info => (enabled ? console.info.bind(console) : () => {});
 
 export const messageTypes = {
   'handshake-request': 'handshake-request',
@@ -37,6 +36,7 @@ function resolveOrigin(url: string) {
 
 const baseMessageDataSchema = z.object({
   contentType: z.literal(eventContentType),
+  namespace: z.string().optional(),
 });
 
 const HandshakeRequestMessageDataSchema = baseMessageDataSchema.extend({
@@ -98,12 +98,14 @@ export interface CreateChildParams<
 > {
   container: T;
   url: string;
+  namespace?: string;
   iframeAttributes?: {
     [attr: string]: any;
   };
   inboundEvents?: IE;
   outboundEvents?: OE;
   handshakeOptions?: HandshakeOptions;
+  disableLogging?: boolean;
 }
 export async function createChild<
   IE extends EventMap,
@@ -112,16 +114,20 @@ export async function createChild<
 >({
   container,
   url,
+  namespace,
   iframeAttributes,
   inboundEvents = {} as IE,
   outboundEvents = {} as OE,
   handshakeOptions = {},
+  disableLogging,
 }: CreateChildParams<IE, OE, T>) {
   const parent = window;
   const iframe = crelt('iframe', iframeAttributes as any) as HTMLIFrameElement;
   iframe.src = url;
 
   const childOrigin = resolveOrigin(url);
+
+  const log = createLogger(disableLogging);
 
   function destroy() {
     log('Destroying child iframe');
@@ -180,6 +186,7 @@ export async function createChild<
       {
         contentType: eventContentType,
         messageType: messageTypes['parent-originated-event'],
+        namespace,
         event: {
           name: eventName.toString(),
           data: dataParseResult.data,
@@ -195,6 +202,16 @@ export async function createChild<
         'Child Originated Event Listener Ignored due to non-whitelisted origin:',
         childOrigin,
         event.origin,
+      );
+
+      return;
+    }
+
+    if (namespace && event.data.namespace !== namespace) {
+      log(
+        'Child Originated Event Listener Ignored due to namespace mismatch:',
+        namespace,
+        event.data.namespace,
       );
 
       return;
@@ -258,7 +275,17 @@ export async function createChild<
             event.origin,
           );
 
-          return false;
+          return;
+        }
+
+        if (namespace && event.data.namespace !== namespace) {
+          log(
+            'Handshake Reply Event Listener Ignored due to namespace mismatch:',
+            namespace,
+            event.data.namespace,
+          );
+
+          return;
         }
 
         if (!HandshakeReplyMessageDataSchema.safeParse(event.data).success) {
@@ -267,7 +294,7 @@ export async function createChild<
             event,
           );
 
-          return false;
+          return;
         }
 
         log('Handshake Reply Event Listener Accepted:', event);
@@ -296,6 +323,7 @@ export async function createChild<
           {
             contentType: eventContentType,
             messageType: messageTypes['handshake-request'],
+            namespace,
           } satisfies HandshakeRequestMessageData,
           childOrigin,
         );
@@ -340,16 +368,22 @@ export interface ConnectToParentParams<
   IE extends EventMap,
   OE extends EventMap,
 > {
+  namespace?: string;
   inboundEvents?: IE;
   outboundEvents?: OE;
+  disableLogging?: boolean;
 }
 export async function connectToParent<IE extends EventMap, OE extends EventMap>(
   {
+    namespace,
     inboundEvents = {} as IE,
     outboundEvents = {} as OE,
+    disableLogging,
   }: ConnectToParentParams<IE, OE> = {} as ConnectToParentParams<IE, OE>,
 ) {
   const child = window;
+
+  const log = createLogger(disableLogging);
 
   type InboundEventName = keyof typeof inboundEvents;
   const listeners = new Map<
@@ -405,6 +439,7 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
         {
           contentType: eventContentType,
           messageType: messageTypes['child-originated-event'],
+          namespace,
           event: {
             name: eventName.toString(),
             data: dataParseResult.data,
@@ -433,6 +468,16 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
         return;
       }
 
+      if (namespace && event.data.namespace !== namespace) {
+        log(
+          'Handshake Request Event Listener Ignored due to namespace mismatch:',
+          namespace,
+          event.data.namespace,
+        );
+
+        return;
+      }
+
       if (!HandshakeRequestMessageDataSchema.safeParse(event.data).success) {
         reject(
           new Error('Invalid handshake request message data', {
@@ -456,6 +501,7 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
         {
           contentType: eventContentType,
           messageType: messageTypes['handshake-reply'],
+          namespace,
         } satisfies HandshakeReplyMessageData,
         parentOrigin,
       );
@@ -468,6 +514,16 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
             'Parent Originated Event Listener Ignored due to non-whitelisted origin:',
             parentOrigin,
             event.origin,
+          );
+
+          return;
+        }
+
+        if (namespace && event.data.namespace !== namespace) {
+          log(
+            'Parent Originated Event Listener Ignored due to namespace mismatch:',
+            namespace,
+            event.data.namespace,
           );
 
           return;
