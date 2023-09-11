@@ -3,9 +3,8 @@ import crelt from 'crelt';
 
 export const eventContentType = 'application/x-izod+json' as const;
 
-const createLogger = (
-  enabled: boolean = process.env.NODE_ENV === 'development',
-): typeof console.info => (enabled ? console.info.bind(console) : () => {});
+const createLogger = (enabled: boolean = false): typeof console.info =>
+  enabled ? console.info.bind(console) : () => {};
 
 export const messageTypes = {
   'handshake-request': 'handshake-request',
