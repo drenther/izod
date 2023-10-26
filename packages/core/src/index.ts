@@ -104,7 +104,7 @@ export interface CreateChildParams<
   inboundEvents?: IE;
   outboundEvents?: OE;
   handshakeOptions?: HandshakeOptions;
-  disableLogging?: boolean;
+  enableLogging?: boolean;
 }
 export async function createChild<
   IE extends EventMap,
@@ -118,7 +118,7 @@ export async function createChild<
   inboundEvents = {} as IE,
   outboundEvents = {} as OE,
   handshakeOptions = {},
-  disableLogging,
+  enableLogging,
 }: CreateChildParams<IE, OE, T>) {
   const parent = window;
   const iframe = crelt('iframe', iframeAttributes as any) as HTMLIFrameElement;
@@ -126,7 +126,7 @@ export async function createChild<
 
   const childOrigin = resolveOrigin(url);
 
-  const log = createLogger(disableLogging);
+  const log = createLogger(enableLogging);
 
   function destroy() {
     log('Destroying child iframe');
@@ -384,19 +384,19 @@ export interface ConnectToParentParams<
   namespace?: string;
   inboundEvents?: IE;
   outboundEvents?: OE;
-  disableLogging?: boolean;
+  enableLogging?: boolean;
 }
 export async function connectToParent<IE extends EventMap, OE extends EventMap>(
   {
     namespace,
     inboundEvents = {} as IE,
     outboundEvents = {} as OE,
-    disableLogging,
+    enableLogging,
   }: ConnectToParentParams<IE, OE> = {} as ConnectToParentParams<IE, OE>,
 ) {
   const child = window;
 
-  const log = createLogger(disableLogging);
+  const log = createLogger(enableLogging);
 
   type InboundEventName = keyof typeof inboundEvents;
   const listeners = new Map<
