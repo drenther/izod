@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import crelt from 'crelt';
+import { nanoid } from 'nanoid';
 
 export const eventContentType = 'application/x-izod+json' as const;
 
@@ -33,9 +34,14 @@ function resolveOrigin(url: string) {
   return a.origin || `${protocol}//${host}`;
 }
 
+export function generateUniqueId(namespace?: string) {
+  return `${namespace ?? 'anon'}__${nanoid()}`;
+}
+
 const baseMessageDataSchema = z.object({
   contentType: z.literal(eventContentType),
   namespace: z.string().optional(),
+  id: z.string(),
 });
 
 const HandshakeRequestMessageDataSchema = baseMessageDataSchema.extend({
@@ -200,6 +206,7 @@ export async function createChild<
         contentType: eventContentType,
         messageType: messageTypes['parent-originated-event'],
         namespace,
+        id: generateUniqueId(namespace),
         event: {
           name: eventName.toString(),
           data: dataParseResult.data,
@@ -337,6 +344,7 @@ export async function createChild<
             contentType: eventContentType,
             messageType: messageTypes['handshake-request'],
             namespace,
+            id: generateUniqueId(namespace),
           } satisfies HandshakeRequestMessageData,
           childOrigin,
         );
@@ -468,6 +476,7 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
           messageType: messageTypes['child-originated-event'],
           namespace,
           event,
+          id: generateUniqueId(namespace),
         } satisfies ChildOriginatedMessageDataEventPayload,
         this.parentOrigin,
       );
@@ -526,6 +535,7 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
           contentType: eventContentType,
           messageType: messageTypes['handshake-reply'],
           namespace,
+          id: generateUniqueId(namespace),
         } satisfies HandshakeReplyMessageData,
         parentOrigin,
       );

@@ -1,7 +1,7 @@
 {
   "name": "@izod/core",
   "private": false,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "crelt": "1.0.6",
+    "nanoid": "5.0.2",
     "type-fest": "4.2.0"
   },
   "repository": {
