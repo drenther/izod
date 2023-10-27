@@ -21,7 +21,11 @@ export const errorCauses = {
   event_data_invalid: 'event_data_invalid',
 } as const;
 
-function resolveOrigin(url: string) {
+function resolveOrigin(url?: string) {
+  if (!url) {
+    return '*';
+  }
+
   const a = document.createElement('a');
   a.href = url;
   const protocol =
