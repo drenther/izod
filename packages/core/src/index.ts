@@ -21,9 +21,11 @@ export const errorCauses = {
   event_data_invalid: 'event_data_invalid',
 } as const;
 
+const wildcardOrigin = '*';
+
 function resolveOrigin(url?: string) {
   if (!url) {
-    return '*';
+    return wildcardOrigin;
   }
 
   const a = document.createElement('a');
@@ -86,6 +88,10 @@ export type ChildOriginatedMessageDataEventPayload = z.infer<
 >;
 
 function isWhitelistedMessage(message: MessageEvent, allowedOrigin: string) {
+  if (allowedOrigin === wildcardOrigin) {
+    return true;
+  }
+
   if (typeof allowedOrigin === 'string' && message.origin !== allowedOrigin) {
     return false;
   }
@@ -106,7 +112,7 @@ export interface CreateChildParams<
   T extends HTMLElement | Element,
 > {
   container: T;
-  url: string;
+  url?: string;
   namespace?: string;
   iframeAttributes?: {
     [attr: string]: any;
@@ -132,7 +138,9 @@ export async function createChild<
 }: CreateChildParams<IE, OE, T>) {
   const parent = window;
   const iframe = crelt('iframe', iframeAttributes as any) as HTMLIFrameElement;
-  iframe.src = url;
+  if (url) {
+    iframe.src = url;
+  }
 
   const childOrigin = resolveOrigin(url);
 
