@@ -6,16 +6,16 @@ import {
   connectToParent,
 } from '@izod/core';
 import { useEffect, useRef } from 'react';
-import useAsync from 'react-use/lib/useAsync';
-import type { z } from 'zod';
+import useAsyncFn from 'react-use/lib/useAsyncFn';
 
 // a typescript trick to get the strictly inferred return type of a function with generics
-class CreateChildParamsWrapper<
+class CreateChildHandshakeWrapper<
   IE extends EventMap,
   OE extends EventMap,
   T extends HTMLElement | Element,
 > {
-  wrapped = (params: CreateChildParams<IE, OE, T>) => createChild(params);
+  wrapped = (params: CreateChildParams<IE, OE, T>) =>
+    createChild(params)['executeHandshake']();
 }
 interface UseChildIframeParams<
   IE extends EventMap,
@@ -24,7 +24,7 @@ interface UseChildIframeParams<
 > extends CreateChildParams<IE, OE, T> {
   onHandshakeComplete?: (
     api: NonNullable<
-      Awaited<ReturnType<CreateChildParamsWrapper<IE, OE, T>['wrapped']>>
+      Awaited<ReturnType<CreateChildHandshakeWrapper<IE, OE, T>['wrapped']>>
     >,
   ) => void;
   onHandshakeError?: (error: Error) => void;
@@ -40,7 +40,11 @@ function useCreateChildIframe<
   destroyOnUnmount,
   ...props
 }: UseChildIframeParams<IE, OE, T>) {
-  const handshakeState = useAsync(() => createChild(props), [props]);
+  const child = useRef(createChild(props));
+  const [handshakeState, executeHandshake] = useAsyncFn(
+    child.current.executeHandshake,
+    [],
+  );
 
   const onHandshakeCompleteCallbackRef =
     useRef<typeof onHandshakeComplete>(onHandshakeComplete);
@@ -84,6 +88,8 @@ function useCreateChildIframe<
   }, [handshakeState]);
 
   return {
+    on: child.current.on,
+    executeHandshake,
     api: handshakeState.value,
     isHandshakeComplete: handshakeState.value !== undefined,
     isHandshakePending: handshakeState.loading,
@@ -91,37 +97,22 @@ function useCreateChildIframe<
   } as const;
 }
 
-function useChildEventListener<
-  IE extends EventMap,
-  OE extends EventMap,
-  T extends HTMLElement | Element = HTMLElement,
-  E extends keyof IE = keyof IE,
->(
-  api:
-    | Awaited<ReturnType<CreateChildParamsWrapper<IE, OE, T>['wrapped']>>
-    | undefined,
-  eventName: E,
-  listener: (data: z.infer<IE[E]>) => void | Promise<void>,
-) {
-  useEffect(() => {
-    const unsubscribe = api?.on(eventName, listener);
-    return unsubscribe;
-  }, [api, eventName, listener]);
-}
-
 export const child = {
   useCreate: useCreateChildIframe,
-  useEventListener: useChildEventListener,
 } as const;
 
-class ConnectToParentParamstWrapper<IE extends EventMap, OE extends EventMap> {
-  wrapped = (params: ConnectToParentParams<IE, OE>) => connectToParent(params);
+class ConnectToParentHandshakeWrapper<
+  IE extends EventMap,
+  OE extends EventMap,
+> {
+  wrapped = (params: ConnectToParentParams<IE, OE>) =>
+    connectToParent(params).executeHandshake();
 }
 interface UseParentParams<IE extends EventMap, OE extends EventMap>
   extends ConnectToParentParams<IE, OE> {
   onHandshakeComplete?: (
     api: NonNullable<
-      Awaited<ReturnType<ConnectToParentParamstWrapper<IE, OE>['wrapped']>>
+      Awaited<ReturnType<ConnectToParentHandshakeWrapper<IE, OE>['wrapped']>>
     >,
   ) => void;
   onHandshakeError?: (error: Error) => void;
@@ -133,7 +124,11 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
     ...props
   }: UseParentParams<IE, OE> = {} as UseParentParams<IE, OE>,
 ) {
-  const handshakeState = useAsync(() => connectToParent(props), []);
+  const parent = useRef(connectToParent(props));
+  const [handshakeState, executeHandshake] = useAsyncFn(
+    parent.current.executeHandshake,
+    [],
+  );
 
   const onHandshakeCompleteCallbackRef =
     useRef<typeof onHandshakeComplete>(onHandshakeComplete);
@@ -166,6 +161,8 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
   }, [handshakeState]);
 
   return {
+    executeHandshake,
+    on: parent.current.on,
     api: handshakeState.value,
     isHandshakeComplete: handshakeState.value !== undefined,
     isHandshakePending: handshakeState.loading,
@@ -173,25 +170,6 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
   } as const;
 }
 
-function useParentEventListener<
-  IE extends EventMap,
-  OE extends EventMap,
-  E extends keyof IE = keyof IE,
->(
-  api:
-    | Awaited<ReturnType<ConnectToParentParamstWrapper<IE, OE>['wrapped']>>
-    | undefined,
-  // might have to change this when the core lib is updated
-  eventName: E,
-  handler: (data: z.infer<IE[E]>) => void | Promise<void>,
-) {
-  useEffect(() => {
-    const unsubscribe = api?.on(eventName, handler);
-    return unsubscribe;
-  }, [api, eventName, handler]);
-}
-
 export const parent = {
   useConnect: useConnectToParent,
-  useEventListener: useParentEventListener,
 } as const;

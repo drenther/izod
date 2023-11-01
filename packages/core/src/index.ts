@@ -122,7 +122,7 @@ export interface CreateChildParams<
   handshakeOptions?: HandshakeOptions;
   enableLogging?: boolean;
 }
-export async function createChild<
+export function createChild<
   IE extends EventMap,
   OE extends EventMap,
   T extends HTMLElement | Element = HTMLElement,
@@ -333,7 +333,6 @@ export async function createChild<
 
         clearInterval(handshakeRetryIntervalTimer);
         parent.removeEventListener('message', handleHandshakeReply, false);
-        parent.addEventListener('message', handleEventsFromChild, false);
 
         const api = {
           destroy,
@@ -394,7 +393,12 @@ export async function createChild<
     });
   }
 
-  return executeHandshake();
+  parent.addEventListener('message', handleEventsFromChild, false);
+
+  return {
+    executeHandshake,
+    on,
+  };
 }
 
 export interface ConnectToParentParams<
@@ -406,7 +410,7 @@ export interface ConnectToParentParams<
   outboundEvents?: OE;
   enableLogging?: boolean;
 }
-export async function connectToParent<IE extends EventMap, OE extends EventMap>(
+export function connectToParent<IE extends EventMap, OE extends EventMap>(
   {
     namespace,
     inboundEvents = {} as IE,
@@ -427,28 +431,30 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
     }
   >();
 
+  function on<E extends keyof IE>(
+    eventName: E,
+    handler: (data: z.infer<IE[E]>) => void | Promise<void>,
+  ) {
+    const listenerId = Symbol();
+    listeners.set(listenerId, {
+      eventName,
+      handler,
+    });
+    log('Child Frame Inbound Event Listener added:', eventName);
+
+    return () => {
+      log('Child Frame Inbound Event Listener removed:', eventName);
+
+      listeners.delete(listenerId);
+    };
+  }
+
   const parent = child.parent;
   const api = {
     child,
     parent,
     parentOrigin: '' as string, // will be set post handshake
-    on<E extends keyof IE>(
-      eventName: E,
-      handler: (data: z.infer<IE[E]>) => void | Promise<void>,
-    ) {
-      const listenerId = Symbol();
-      listeners.set(listenerId, {
-        eventName,
-        handler,
-      });
-      log('Child Frame Inbound Event Listener added:', eventName);
-
-      return () => {
-        log('Child Frame Inbound Event Listener removed:', eventName);
-
-        listeners.delete(listenerId);
-      };
-    },
+    on,
     emit<E extends keyof OE>(eventName: E, data: z.infer<OE[E]>) {
       const eventSchema = outboundEvents[eventName];
       if (!eventSchema) {
@@ -495,71 +501,20 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
     },
   } as const;
 
-  return new Promise<typeof api>((resolve, reject) => {
-    function handleHandshakeRequest(
-      event: MessageEvent<HandshakeRequestMessageData>,
-    ) {
-      log('Handshake Request Event Listener received:', event);
-
-      if (
-        event.source instanceof MessagePort ||
-        event.source instanceof ServiceWorker
+  function executeHandshake() {
+    return new Promise<typeof api>((resolve, reject) => {
+      function handleHandshakeRequest(
+        event: MessageEvent<HandshakeRequestMessageData>,
       ) {
-        log(
-          'Handshake Request Event Listener ignored due to invalid source type:',
-          event.source,
-        );
+        log('Handshake Request Event Listener received:', event);
 
-        return;
-      }
-
-      if (namespace && event.data.namespace !== namespace) {
-        log(
-          'Handshake Request Event Listener ignored due to namespace mismatch:',
-          namespace,
-          event.data.namespace,
-        );
-
-        return;
-      }
-
-      if (!HandshakeRequestMessageDataSchema.safeParse(event.data).success) {
-        reject(
-          new Error('Invalid handshake request message data', {
-            cause: errorCauses.handshake_request_invalid,
-          }),
-        );
-        return;
-      }
-
-      child.removeEventListener('message', handleHandshakeRequest, false);
-
-      const parentOrigin = event.origin;
-      // @ts-ignore
-      api.parentOrigin = parentOrigin;
-
-      child.addEventListener('message', handleEventsFromParent, false);
-
-      log('Handshake Reply sent:', parentOrigin);
-
-      parent.postMessage(
-        {
-          contentType: eventContentType,
-          messageType: messageTypes['handshake-reply'],
-          namespace,
-          id: generateUniqueId(namespace),
-        } satisfies HandshakeReplyMessageData,
-        parentOrigin,
-      );
-
-      return resolve(api);
-
-      function handleEventsFromParent(event: MessageEvent) {
-        if (!isWhitelistedMessage(event, parentOrigin)) {
+        if (
+          event.source instanceof MessagePort ||
+          event.source instanceof ServiceWorker
+        ) {
           log(
-            'Parent Originated Event ignored due to non-whitelisted origin:',
-            parentOrigin,
-            event.origin,
+            'Handshake Request Event Listener ignored due to invalid source type:',
+            event.source,
           );
 
           return;
@@ -567,7 +522,7 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
 
         if (namespace && event.data.namespace !== namespace) {
           log(
-            'Parent Originated Event ignored due to namespace mismatch:',
+            'Handshake Request Event Listener ignored due to namespace mismatch:',
             namespace,
             event.data.namespace,
           );
@@ -575,40 +530,98 @@ export async function connectToParent<IE extends EventMap, OE extends EventMap>(
           return;
         }
 
-        const messageData =
-          ParentOriginatedMessageDataEventPayloadSchema.safeParse(event.data);
-        if (!messageData.success) {
-          log(
-            'Parent Originated Event ignored due to invalid message data:',
-            event,
+        if (!HandshakeRequestMessageDataSchema.safeParse(event.data).success) {
+          reject(
+            new Error('Invalid handshake request message data', {
+              cause: errorCauses.handshake_request_invalid,
+            }),
           );
-
           return;
         }
 
-        log('Parent Originated Event accepted:', event);
+        child.removeEventListener('message', handleHandshakeRequest, false);
 
-        const { event: eventData } = messageData.data;
-        const { name, data } = eventData;
+        const parentOrigin = event.origin;
+        // @ts-ignore
+        api.parentOrigin = parentOrigin;
 
-        Array.from(listeners.values())
-          .filter(({ eventName }) => eventName === name)
-          .forEach(({ handler, eventName }) => {
-            const dataParseResult = inboundEvents[eventName]?.safeParse(data);
-            if (dataParseResult?.success) {
-              log(
-                'Parent Originated Event Listener Handler invoked:',
-                eventName,
-              );
+        child.addEventListener('message', handleEventsFromParent, false);
 
-              handler(dataParseResult.data);
-            }
-          });
+        log('Handshake Reply sent:', parentOrigin);
+
+        parent.postMessage(
+          {
+            contentType: eventContentType,
+            messageType: messageTypes['handshake-reply'],
+            namespace,
+            id: generateUniqueId(namespace),
+          } satisfies HandshakeReplyMessageData,
+          parentOrigin,
+        );
+
+        return resolve(api);
+
+        function handleEventsFromParent(event: MessageEvent) {
+          if (!isWhitelistedMessage(event, parentOrigin)) {
+            log(
+              'Parent Originated Event ignored due to non-whitelisted origin:',
+              parentOrigin,
+              event.origin,
+            );
+
+            return;
+          }
+
+          if (namespace && event.data.namespace !== namespace) {
+            log(
+              'Parent Originated Event ignored due to namespace mismatch:',
+              namespace,
+              event.data.namespace,
+            );
+
+            return;
+          }
+
+          const messageData =
+            ParentOriginatedMessageDataEventPayloadSchema.safeParse(event.data);
+          if (!messageData.success) {
+            log(
+              'Parent Originated Event ignored due to invalid message data:',
+              event,
+            );
+
+            return;
+          }
+
+          log('Parent Originated Event accepted:', event);
+
+          const { event: eventData } = messageData.data;
+          const { name, data } = eventData;
+
+          Array.from(listeners.values())
+            .filter(({ eventName }) => eventName === name)
+            .forEach(({ handler, eventName }) => {
+              const dataParseResult = inboundEvents[eventName]?.safeParse(data);
+              if (dataParseResult?.success) {
+                log(
+                  'Parent Originated Event Listener Handler invoked:',
+                  eventName,
+                );
+
+                handler(dataParseResult.data);
+              }
+            });
+        }
       }
-    }
 
-    child.addEventListener('message', handleHandshakeRequest, false);
+      child.addEventListener('message', handleHandshakeRequest, false);
 
-    log('Handshake Request Listener added');
-  });
+      log('Handshake Request Listener added');
+    });
+  }
+
+  return {
+    executeHandshake,
+    on,
+  };
 }

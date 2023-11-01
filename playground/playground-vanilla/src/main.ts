@@ -5,7 +5,7 @@ async function main() {
   const container = document.getElementById('child-container');
 
   if (container) {
-    const childApi = await createChild({
+    const child = createChild({
       container,
       url: 'http://127.0.0.1:3010',
       inboundEvents: childOriginEvents,
@@ -15,17 +15,20 @@ async function main() {
       },
     });
 
-    const childMessageList = document.getElementById('child-message-list');
-    childApi.on('whisper', (data) => {
+    child.on('whisper', (data) => {
       const p = document.createElement('p');
       p.textContent = data.message;
       childMessageList?.appendChild(p);
     });
-    childApi.on('answerQuestion', (data) => {
+    child.on('answerQuestion', (data) => {
       const p = document.createElement('p');
       p.textContent = data.answer;
       childMessageList?.appendChild(p);
     });
+
+    const api = await child.executeHandshake();
+
+    const childMessageList = document.getElementById('child-message-list');
 
     const parentControlPanelForm = document.getElementById(
       'parent-control-panel-form',
@@ -48,9 +51,9 @@ async function main() {
         ) as HTMLInputElement;
 
         if (questionRadio.checked) {
-          childApi.emit('askQuestion', { question: text });
+          api.emit('askQuestion', { question: text });
         } else if (shoutRadio.checked) {
-          childApi.emit('shout', { message: text });
+          api.emit('shout', { message: text });
         }
 
         textInput.value = '';

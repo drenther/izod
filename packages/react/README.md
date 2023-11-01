@@ -48,8 +48,9 @@ import { child } from '@izod/react';
 
 function Parent() {
   //  accepts all the parameters that `createChild` from @izod/core does
-  // `api` is the same that is returned from `connectToParent` from @izod/core
-  const { api } = child.useCreate({
+  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
+  // `on` can be used to attach event listeners
+  const { on, api, executeHandshake } = child.useCreate({
     container: document.body, // required
     url: 'http://127.0.0.1:3010', // required
     inboundEvents: parentOriginEvents, // optional
@@ -73,14 +74,26 @@ function Parent() {
   // to add event listeners
   // prefer this over `onHandshakeComplete` for attaching event listeners
   useEffect(() => {
-    // function is returned from `.on` that can be called to unsubscribe
-    const off = api.on('askQuestion', (data) => {
-      console.log('Question: ', data.question);
-    });
+    if (api) {
+      // function is returned from `.on` that can be called to unsubscribe
+      const off = on('askQuestion', (data) => {
+        console.log('Question: ', data.question);
+      });
 
-    // return that from the useEffect for cleanup
-    return off;
+      // return that from the useEffect for cleanup
+      return off;
+    }
   }, [api]);
+
+  const ranOnce = useRef(false);
+  useEffect(() => {
+    if (ranOnce.current) {
+      return;
+    }
+
+    executeHandshake();
+    ranOnce.current = true;
+  }, []);
 
   const shout = () => {
     api.emit('shout', { message: 'Hello' });
@@ -94,8 +107,8 @@ function Parent() {
 import { parent } from '@izod/react';
 
 function Child() {
-  // `api` is the same that is returned from `connectToParent` from @izod/core
-  const { api } = parent.useConnect({
+  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
+  const { on, api, executeHandshake } = parent.useConnect({
     inboundEvents: parentOriginEvents,
     outboundEvents: childOriginEvents,
     onHandshakeComplete(api) {
@@ -110,13 +123,25 @@ function Child() {
   // to add event listeners
   useEffect(() => {
     // function is returned from `.on` that can be called to unsubscribe
-    const off = api.on('shout', (data) => {
-      console.log(`Parent shouted: ${data.message}`);
-    });
+    if (api) {
+      const off = api.on('shout', (data) => {
+        console.log(`Parent shouted: ${data.message}`);
+      });
 
-    // return that from the useEffect for cleanup
-    return off;
+      // return that from the useEffect for cleanup
+      return off;
+    }
   }, [api]);
+
+  const ranOnce = useRef(false);
+  useEffect(() => {
+    if (ranOnce.current) {
+      return;
+    }
+
+    executeHandshake();
+    ranOnce.current = true;
+  }, []);
 
   const whisper = () => {
     api.emit('whisper', { message: 'Hi' });

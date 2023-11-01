@@ -54,9 +54,8 @@ export const childOriginEvents = {
 
 import { createChild } from '@izod/core';
 
-// create the iframe, appends it to the container and initiates handshake
-// promise is settled once handshake is successful or failed due to some fatal error or timeout
-const childApi = await createChild({
+// create the child instance (not mounted until handshake is executed)
+const child = createChild({
   container: document.body, // required
   url: 'http://127.0.0.1:3010', // required
   inboundEvents: childOriginEvents, // optional
@@ -68,10 +67,13 @@ const childApi = await createChild({
   },
 });
 
+// perfect time to setup event listeners so that they are ready once the handshake is over
 // type safe event listeners for events coming from the child
-childApi.on('whisper', (data) => {
+child.on('whisper', (data) => {
   console.log(`Child whispered: ${data.message}`);
 });
+
+const childApi = await child.executeHandshake();
 
 // type safe event emitters
 childApi.emit('shout', { message: 'Hello' });
@@ -82,47 +84,24 @@ childApi.emit('shout', { message: 'Hello' });
 
 import { connectToParent } from '@izod/core';
 
-// sets the boilerplate on the child side for completing the handshake
-const parentApi = await connectToParent({
+// sets the boilerplate
+const parent = connectToParent({
   inboundEvents: parentOriginEvents, // optional
   outboundEvents: childOriginEvents, // optional
 });
 
-// type safe event listeners for events coming from the child
-parentApi.on('shout', (data) => {
+// type safe event listeners for events coming from the parent
+parent.on('shout', (data) => {
   console.log(`Parent shouted: ${data.message}`);
 });
+
+const parentApi = await parent.executeHandshake();
 
 // type safe event emitters
 parentApi.emit('whisper', { message: 'Hi' });
 ```
 
 ### @izod/react
-
-```ts
-// common.ts
-
-import { z } from 'zod';
-import type { EventMap } from '@izod/core';
-
-export const parentOriginEvents = {
-  askQuestion: z.object({
-    question: z.string(),
-  }),
-  shout: z.object({
-    message: z.string(),
-  }),
-} as const satisfies EventMap;
-
-export const childOriginEvents = {
-  answerQuestion: z.object({
-    answer: z.string(),
-  }),
-  whisper: z.object({
-    message: z.string(),
-  }),
-} as const satisfies EventMap;
-```
 
 ```tsx
 // parent.tsx
@@ -131,8 +110,9 @@ import { child } from '@izod/react';
 
 function Parent() {
   //  accepts all the parameters that `createChild` from @izod/core does
-  // `api` is the same that is returned from `connectToParent` from @izod/core
-  const { api } = child.useCreate({
+  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
+  // `on` can be used to attach event listeners
+  const { on, api, executeHandshake } = child.useCreate({
     container: document.body, // required
     url: 'http://127.0.0.1:3010', // required
     inboundEvents: parentOriginEvents, // optional
@@ -156,14 +136,26 @@ function Parent() {
   // to add event listeners
   // prefer this over `onHandshakeComplete` for attaching event listeners
   useEffect(() => {
-    // function is returned from `.on` that can be called to unsubscribe
-    const off = api.on('askQuestion', (data) => {
-      console.log('Question: ', data.question);
-    });
+    if (api) {
+      // function is returned from `.on` that can be called to unsubscribe
+      const off = on('askQuestion', (data) => {
+        console.log('Question: ', data.question);
+      });
 
-    // return that from the useEffect for cleanup
-    return off;
+      // return that from the useEffect for cleanup
+      return off;
+    }
   }, [api]);
+
+  const ranOnce = useRef(false);
+  useEffect(() => {
+    if (ranOnce.current) {
+      return;
+    }
+
+    executeHandshake();
+    ranOnce.current = true;
+  }, []);
 
   const shout = () => {
     api.emit('shout', { message: 'Hello' });
@@ -177,8 +169,8 @@ function Parent() {
 import { parent } from '@izod/react';
 
 function Child() {
-  // `api` is the same that is returned from `connectToParent` from @izod/core
-  const { api } = parent.useConnect({
+  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
+  const { on, api, executeHandshake } = parent.useConnect({
     inboundEvents: parentOriginEvents,
     outboundEvents: childOriginEvents,
     onHandshakeComplete(api) {
@@ -193,13 +185,25 @@ function Child() {
   // to add event listeners
   useEffect(() => {
     // function is returned from `.on` that can be called to unsubscribe
-    const off = api.on('shout', (data) => {
-      console.log(`Parent shouted: ${data.message}`);
-    });
+    if (api) {
+      const off = api.on('shout', (data) => {
+        console.log(`Parent shouted: ${data.message}`);
+      });
 
-    // return that from the useEffect for cleanup
-    return off;
+      // return that from the useEffect for cleanup
+      return off;
+    }
   }, [api]);
+
+  const ranOnce = useRef(false);
+  useEffect(() => {
+    if (ranOnce.current) {
+      return;
+    }
+
+    executeHandshake();
+    ranOnce.current = true;
+  }, []);
 
   const whisper = () => {
     api.emit('whisper', { message: 'Hi' });

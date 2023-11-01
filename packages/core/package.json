@@ -1,7 +1,7 @@
 {
   "name": "@izod/core",
   "private": false,
-  "version": "0.7.1",
+  "version": "1.0.0",
   "type": "module",
   "sideEffects": false,
   "files": [

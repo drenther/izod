@@ -44,9 +44,8 @@ export const childOriginEvents = {
 
 import { createChild } from '@izod/core';
 
-// create the iframe, appends it to the container and initiates handshake
-// promise is settled once handshake is successful or failed due to some fatal error or timeout
-const childApi = await createChild({
+// create the child instance (not mounted until handshake is executed)
+const child = createChild({
   container: document.body, // required
   url: 'http://127.0.0.1:3010', // required
   inboundEvents: childOriginEvents, // optional
@@ -58,10 +57,13 @@ const childApi = await createChild({
   },
 });
 
+// perfect time to setup event listeners so that they are ready once the handshake is over
 // type safe event listeners for events coming from the child
-childApi.on('whisper', (data) => {
+child.on('whisper', (data) => {
   console.log(`Child whispered: ${data.message}`);
 });
+
+const childApi = await child.executeHandshake();
 
 // type safe event emitters
 childApi.emit('shout', { message: 'Hello' });
@@ -72,21 +74,19 @@ childApi.emit('shout', { message: 'Hello' });
 
 import { connectToParent } from '@izod/core';
 
-// sets the boilerplate on the child side for completing the handshake
-const parentApi = await connectToParent({
+// sets the boilerplate
+const parent = connectToParent({
   inboundEvents: parentOriginEvents, // optional
   outboundEvents: childOriginEvents, // optional
 });
 
-// type safe event listeners for events coming from the child
-parentApi.on('shout', (data) => {
+// type safe event listeners for events coming from the parent
+parent.on('shout', (data) => {
   console.log(`Parent shouted: ${data.message}`);
 });
+
+const parentApi = await parent.executeHandshake();
 
 // type safe event emitters
 parentApi.emit('whisper', { message: 'Hi' });
 ```
-
-## Prior Art (packages I ~~copied~~ adapted code from)
-
-- [Postmate](https://github.com/dollarshaveclub/postmate)

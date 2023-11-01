@@ -1,9 +1,9 @@
 import { parent } from '@izod/react';
 import { childOriginEvents, parentOriginEvents } from '@izod/playground-common';
-import { useCallback, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function App() {
-  const { api } = parent.useConnect({
+  const { executeHandshake, on, api } = parent.useConnect({
     inboundEvents: parentOriginEvents,
     outboundEvents: childOriginEvents,
     onHandshakeComplete(api) {
@@ -14,24 +14,22 @@ function App() {
   });
 
   const [data, setData] = useState<string[]>([]);
-  parent.useEventListener<typeof parentOriginEvents, typeof childOriginEvents>(
-    api,
-    'askQuestion',
-    useCallback((data) => {
-      if ('question' in data) {
+
+  const ranOnce = useRef(false);
+  useEffect(() => {
+    if (!ranOnce.current) {
+      on('askQuestion', (data) => {
         setData((prev) => [...prev, `Question: ${data.question}`]);
-      }
-    }, []),
-  );
-  parent.useEventListener<typeof parentOriginEvents, typeof childOriginEvents>(
-    api,
-    'shout',
-    useCallback((data) => {
-      if ('message' in data) {
+      });
+
+      on('shout', (data) => {
         setData((prev) => [...prev, `Message: ${data.message}`]);
-      }
-    }, []),
-  );
+      });
+
+      executeHandshake();
+      ranOnce.current = true;
+    }
+  }, [executeHandshake, on]);
 
   const [input, setInput] = useState<string>('');
   const [type, setType] =
