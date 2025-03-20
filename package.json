@@ -25,5 +25,6 @@
     "typescript",
     "zod"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "pnpm@9.1.1+sha1.09ada6cd05003e0ced25fb716f9fda4063ec2e3b"
 }

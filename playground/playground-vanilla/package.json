@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "zod": "3.21.4",
+    "zod": "3.24.2",
     "@izod/core": "workspace:*",
     "@izod/playground-common": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "5.0.2",
+    "typescript": "5.8.2",
     "vite": "4.4.5"
   }
 }

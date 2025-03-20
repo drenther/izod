@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "zod": "3.21.4",
+    "zod": "3.24.2",
     "@izod/core": "workspace:*",
     "@izod/react": "workspace:*",
     "@izod/playground-common": "workspace:*"
@@ -26,7 +26,7 @@
     "eslint": "8.45.0",
     "eslint-plugin-react-hooks": "4.6.0",
     "eslint-plugin-react-refresh": "0.4.3",
-    "typescript": "5.0.2",
+    "typescript": "5.8.2",
     "vite": "4.4.5"
   }
 }

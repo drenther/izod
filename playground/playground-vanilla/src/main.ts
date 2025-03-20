@@ -7,7 +7,7 @@ async function main() {
   if (container) {
     const child = createChild({
       container,
-      url: 'http://127.0.0.1:3010',
+      url: 'http://localhost:3010',
       inboundEvents: childOriginEvents,
       outboundEvents: parentOriginEvents,
       handshakeOptions: {

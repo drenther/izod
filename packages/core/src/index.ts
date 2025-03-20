@@ -449,13 +449,8 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
     };
   }
 
-  const parent = child.parent;
-  const api = {
-    child,
-    parent,
-    parentOrigin: '' as string, // will be set post handshake
-    on,
-    emit<E extends keyof OE>(eventName: E, data: z.infer<OE[E]>) {
+  function createEmitter(parentOrigin: string) {
+    function emit<E extends keyof OE>(eventName: E, data: z.infer<OE[E]>) {
       const eventSchema = outboundEvents[eventName];
       if (!eventSchema) {
         throw new Error(
@@ -496,13 +491,23 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
           event,
           id: generateUniqueId(namespace),
         } satisfies ChildOriginatedMessageDataEventPayload,
-        this.parentOrigin,
+        parentOrigin,
       );
-    },
-  } as const;
+    }
+
+    return emit;
+  }
+
+  const parent = child.parent;
 
   function executeHandshake() {
-    return new Promise<typeof api>((resolve, reject) => {
+    return new Promise<{
+      child: typeof child;
+      parent: typeof parent;
+      parentOrigin: string;
+      on: typeof on;
+      emit: ReturnType<typeof createEmitter>;
+    }>((resolve, reject) => {
       function handleHandshakeRequest(
         event: MessageEvent<HandshakeRequestMessageData>,
       ) {
@@ -542,24 +547,6 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
         child.removeEventListener('message', handleHandshakeRequest, false);
 
         const parentOrigin = event.origin;
-        // @ts-ignore
-        api.parentOrigin = parentOrigin;
-
-        child.addEventListener('message', handleEventsFromParent, false);
-
-        log('Handshake Reply sent:', parentOrigin);
-
-        parent.postMessage(
-          {
-            contentType: eventContentType,
-            messageType: messageTypes['handshake-reply'],
-            namespace,
-            id: generateUniqueId(namespace),
-          } satisfies HandshakeReplyMessageData,
-          parentOrigin,
-        );
-
-        return resolve(api);
 
         function handleEventsFromParent(event: MessageEvent) {
           if (!isWhitelistedMessage(event, parentOrigin)) {
@@ -612,6 +599,28 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
               }
             });
         }
+        child.addEventListener('message', handleEventsFromParent, false);
+
+        log('Handshake Reply sent:', parentOrigin);
+
+        parent.postMessage(
+          {
+            contentType: eventContentType,
+            messageType: messageTypes['handshake-reply'],
+            namespace,
+            id: generateUniqueId(namespace),
+          } satisfies HandshakeReplyMessageData,
+          parentOrigin,
+        );
+
+        const api = {
+          child,
+          parent,
+          parentOrigin,
+          on,
+          emit: createEmitter(parentOrigin),
+        } as const;
+        return resolve(api);
       }
 
       child.addEventListener('message', handleHandshakeRequest, false);

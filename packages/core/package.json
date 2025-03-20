@@ -1,7 +1,7 @@
 {
   "name": "@izod/core",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -22,18 +22,18 @@
   },
   "devDependencies": {
     "@types/node": "20.4.8",
-    "typescript": "5.0.2",
+    "typescript": "5.8.2",
     "vite": "4.4.5",
     "vite-plugin-dts": "3.5.1",
-    "zod": "3.21.4"
+    "zod": "3.24.2"
   },
   "peerDependencies": {
     "zod": "^2.0.0 || ^3.0.0"
   },
   "dependencies": {
     "crelt": "1.0.6",
-    "nanoid": "5.0.2",
-    "type-fest": "4.2.0"
+    "nanoid": "5.1.5",
+    "type-fest": "4.37.0"
   },
   "repository": {
     "type": "git",
