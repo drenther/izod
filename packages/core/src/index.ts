@@ -515,7 +515,7 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
 
         if (
           event.source instanceof MessagePort ||
-          event.source instanceof ServiceWorker
+          isEventSourceServiceWorker(event)
         ) {
           log(
             'Handshake Request Event Listener ignored due to invalid source type:',
@@ -633,4 +633,13 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
     executeHandshake,
     on,
   };
+}
+
+function isEventSourceServiceWorker(event: MessageEvent) {
+  // ServiceWorker is not available in Private Browsing Mode in Firefox
+  try {
+    return event.source instanceof ServiceWorker;
+  } catch {
+    return false;
+  }
 }

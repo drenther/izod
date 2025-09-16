@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "prettier": "3.0.1",
-    "turbo": "1.10.12"
+    "turbo": "2.5.6"
   },
   "repository": {
     "type": "git",
@@ -26,5 +26,5 @@
     "zod"
   ],
   "license": "MIT",
-  "packageManager": "pnpm@9.1.1+sha1.09ada6cd05003e0ced25fb716f9fda4063ec2e3b"
+  "packageManager": "pnpm@10.16.1"
 }
