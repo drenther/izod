@@ -48,6 +48,9 @@ describe("createChild", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    return () => {
+      container.remove();
+    };
   });
 
   it("returns executeHandshake and on functions", () => {
@@ -118,6 +121,9 @@ describe("Standard Schema validation", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    return () => {
+      container.remove();
+    };
   });
 
   it("throws on invalid event name in emit", () => {
@@ -275,6 +281,9 @@ describe("handshake", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    return () => {
+      container.remove();
+    };
   });
 
   it("resolves on valid handshake reply", async () => {
