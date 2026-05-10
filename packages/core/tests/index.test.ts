@@ -1,20 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 import {
   createChild,
   connectToParent,
   errorCauses,
   eventContentType,
   messageTypes,
-} from "../src/index.js";
+} from '../src/index.js';
 
 function createMockSchema<T>(
   validateFn: (value: unknown) => StandardSchemaV1.Result<T>,
 ): StandardSchemaV1<T, T> {
   return {
-    "~standard": {
+    '~standard': {
       version: 1,
-      vendor: "test",
+      vendor: 'test',
       validate: validateFn,
     },
   };
@@ -30,99 +30,99 @@ function createFailingSchema(issues: StandardSchemaV1.Issue[]): StandardSchemaV1
 
 function createAsyncSchema(): StandardSchemaV1 {
   return {
-    "~standard": {
+    '~standard': {
       version: 1,
-      vendor: "test",
-      validate: () => Promise.resolve({ value: "async" }),
+      vendor: 'test',
+      validate: () => Promise.resolve({ value: 'async' }),
     },
   } as unknown as StandardSchemaV1;
 }
 
-describe("createChild", () => {
+describe('createChild', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     return () => {
       container.remove();
     };
   });
 
-  it("returns executeHandshake and on functions", () => {
+  it('returns executeHandshake and on functions', () => {
     const result = createChild({ container });
-    expect(result).toHaveProperty("executeHandshake");
-    expect(result).toHaveProperty("on");
-    expect(typeof result.executeHandshake).toBe("function");
-    expect(typeof result.on).toBe("function");
+    expect(result).toHaveProperty('executeHandshake');
+    expect(result).toHaveProperty('on');
+    expect(typeof result.executeHandshake).toBe('function');
+    expect(typeof result.on).toBe('function');
   });
 
-  it("creates an iframe in the container", () => {
-    createChild({ container, url: "https://example.com" });
-    expect(container.querySelector("iframe")).toBeNull();
+  it('creates an iframe in the container', () => {
+    createChild({ container, url: 'https://example.com' });
+    expect(container.querySelector('iframe')).toBeNull();
 
-    createChild({ container, url: "https://example.com" }).executeHandshake();
-    const iframe = container.querySelector("iframe");
+    createChild({ container, url: 'https://example.com' }).executeHandshake();
+    const iframe = container.querySelector('iframe');
     expect(iframe).not.toBeNull();
-    expect(iframe?.src).toBe("https://example.com/");
+    expect(iframe?.src).toBe('https://example.com/');
   });
 
-  it("registers an event listener on subscribe", () => {
+  it('registers an event listener on subscribe', () => {
     const handler = vi.fn();
     const inboundEvents = {
       testEvent: createPassthroughSchema(),
     };
 
     const { on } = createChild({ container, inboundEvents });
-    const unsubscribe = on("testEvent", handler);
-    expect(typeof unsubscribe).toBe("function");
+    const unsubscribe = on('testEvent', handler);
+    expect(typeof unsubscribe).toBe('function');
   });
 
-  it("unsubscribe removes the listener", () => {
+  it('unsubscribe removes the listener', () => {
     const handler = vi.fn();
     const inboundEvents = {
       testEvent: createPassthroughSchema(),
     };
 
     const { on } = createChild({ container, inboundEvents });
-    const unsubscribe = on("testEvent", handler);
+    const unsubscribe = on('testEvent', handler);
     unsubscribe();
   });
 });
 
-describe("connectToParent", () => {
-  it("returns executeHandshake and on functions", () => {
+describe('connectToParent', () => {
+  it('returns executeHandshake and on functions', () => {
     const result = connectToParent();
-    expect(result).toHaveProperty("executeHandshake");
-    expect(result).toHaveProperty("on");
-    expect(typeof result.executeHandshake).toBe("function");
-    expect(typeof result.on).toBe("function");
+    expect(result).toHaveProperty('executeHandshake');
+    expect(result).toHaveProperty('on');
+    expect(typeof result.executeHandshake).toBe('function');
+    expect(typeof result.on).toBe('function');
   });
 
-  it("registers an event listener on subscribe", () => {
+  it('registers an event listener on subscribe', () => {
     const handler = vi.fn();
     const inboundEvents = {
       testEvent: createPassthroughSchema(),
     };
 
     const { on } = connectToParent({ inboundEvents });
-    const unsubscribe = on("testEvent", handler);
-    expect(typeof unsubscribe).toBe("function");
+    const unsubscribe = on('testEvent', handler);
+    expect(typeof unsubscribe).toBe('function');
   });
 });
 
-describe("Standard Schema validation", () => {
+describe('Standard Schema validation', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     return () => {
       container.remove();
     };
   });
 
-  it("throws on invalid event name in emit", () => {
+  it('throws on invalid event name in emit', () => {
     const outboundEvents = {
       validEvent: createPassthroughSchema(),
     };
@@ -131,31 +131,31 @@ describe("Standard Schema validation", () => {
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
+    const iframe = container.querySelector('iframe')!;
     const postMessageSpy = vi.fn();
-    Object.defineProperty(iframe, "contentWindow", {
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: postMessageSpy },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          id: "test-id",
+          messageType: messageTypes['handshake-reply'],
+          id: 'test-id',
         },
       }),
     );
 
     return handshakePromise.then((api) => {
       expect(() =>
-        (api.emit as (name: string, data: unknown) => void)("invalidEvent", "data"),
-      ).toThrow("not defined in the outboundEvents map");
+        (api.emit as (name: string, data: unknown) => void)('invalidEvent', 'data'),
+      ).toThrow('not defined in the outboundEvents map');
     });
   });
 
-  it("throws on invalid data for emit", () => {
-    const issues: StandardSchemaV1.Issue[] = [{ message: "invalid data" }];
+  it('throws on invalid data for emit', () => {
+    const issues: StandardSchemaV1.Issue[] = [{ message: 'invalid data' }];
     const outboundEvents = {
       testEvent: createFailingSchema(issues),
     };
@@ -164,26 +164,26 @@ describe("Standard Schema validation", () => {
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
+    const iframe = container.querySelector('iframe')!;
     const postMessageSpy = vi.fn();
-    Object.defineProperty(iframe, "contentWindow", {
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: postMessageSpy },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          id: "test-id",
+          messageType: messageTypes['handshake-reply'],
+          id: 'test-id',
         },
       }),
     );
 
     return handshakePromise.then((api) => {
       try {
-        api.emit("testEvent", "bad-data");
-        expect.unreachable("should have thrown");
+        api.emit('testEvent', 'bad-data');
+        expect.unreachable('should have thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).cause).toBe(errorCauses.event_data_invalid);
@@ -191,7 +191,7 @@ describe("Standard Schema validation", () => {
     });
   });
 
-  it("throws TypeError for async schemas", () => {
+  it('throws TypeError for async schemas', () => {
     const outboundEvents = {
       testEvent: createAsyncSchema(),
     };
@@ -200,29 +200,29 @@ describe("Standard Schema validation", () => {
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
+    const iframe = container.querySelector('iframe')!;
     const postMessageSpy = vi.fn();
-    Object.defineProperty(iframe, "contentWindow", {
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: postMessageSpy },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          id: "test-id",
+          messageType: messageTypes['handshake-reply'],
+          id: 'test-id',
         },
       }),
     );
 
     return handshakePromise.then((api) => {
-      expect(() => api.emit("testEvent", "data")).toThrow(TypeError);
-      expect(() => api.emit("testEvent", "data")).toThrow("Schema validation must be synchronous");
+      expect(() => api.emit('testEvent', 'data')).toThrow(TypeError);
+      expect(() => api.emit('testEvent', 'data')).toThrow('Schema validation must be synchronous');
     });
   });
 
-  it("emits valid data successfully", () => {
+  it('emits valid data successfully', () => {
     const outboundEvents = {
       testEvent: createPassthroughSchema<string>(),
     };
@@ -231,31 +231,31 @@ describe("Standard Schema validation", () => {
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
+    const iframe = container.querySelector('iframe')!;
     const postMessageSpy = vi.fn();
-    Object.defineProperty(iframe, "contentWindow", {
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: postMessageSpy },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          id: "test-id",
+          messageType: messageTypes['handshake-reply'],
+          id: 'test-id',
         },
       }),
     );
 
     return handshakePromise.then((api) => {
-      api.emit("testEvent", "hello");
+      api.emit('testEvent', 'hello');
       expect(postMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           contentType: eventContentType,
-          messageType: messageTypes["parent-originated-event"],
+          messageType: messageTypes['parent-originated-event'],
           event: expect.objectContaining({
-            name: "testEvent",
-            data: "hello",
+            name: 'testEvent',
+            data: 'hello',
           }),
         }),
         expect.any(String),
@@ -264,50 +264,50 @@ describe("Standard Schema validation", () => {
   });
 });
 
-describe("handshake", () => {
+describe('handshake', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     return () => {
       container.remove();
     };
   });
 
-  it("resolves on valid handshake reply", async () => {
+  it('resolves on valid handshake reply', async () => {
     const { executeHandshake } = createChild({
       container,
-      url: "https://example.com",
+      url: 'https://example.com',
     });
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
-    Object.defineProperty(iframe, "contentWindow", {
+    const iframe = container.querySelector('iframe')!;
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: vi.fn() },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          id: "reply-id",
+          messageType: messageTypes['handshake-reply'],
+          id: 'reply-id',
         },
-        origin: "https://example.com",
+        origin: 'https://example.com',
       }),
     );
 
     const api = await handshakePromise;
-    expect(api).toHaveProperty("destroy");
-    expect(api).toHaveProperty("on");
-    expect(api).toHaveProperty("emit");
-    expect(api).toHaveProperty("iframe");
-    expect(api).toHaveProperty("childOrigin");
+    expect(api).toHaveProperty('destroy');
+    expect(api).toHaveProperty('on');
+    expect(api).toHaveProperty('emit');
+    expect(api).toHaveProperty('iframe');
+    expect(api).toHaveProperty('childOrigin');
   });
 
-  it("rejects after max handshake attempts", async () => {
+  it('rejects after max handshake attempts', async () => {
     const { executeHandshake } = createChild({
       container,
       handshakeOptions: {
@@ -318,52 +318,52 @@ describe("handshake", () => {
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
-    Object.defineProperty(iframe, "contentWindow", {
+    const iframe = container.querySelector('iframe')!;
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: vi.fn() },
     });
 
-    iframe.dispatchEvent(new Event("load"));
+    iframe.dispatchEvent(new Event('load'));
 
-    await expect(handshakePromise).rejects.toThrow("Handshake failed after");
+    await expect(handshakePromise).rejects.toThrow('Handshake failed after');
   });
 
-  it("filters messages by namespace", async () => {
+  it('filters messages by namespace', async () => {
     const { executeHandshake } = createChild({
       container,
-      namespace: "test-ns",
+      namespace: 'test-ns',
     });
 
     const handshakePromise = executeHandshake();
 
-    const iframe = container.querySelector("iframe")!;
-    Object.defineProperty(iframe, "contentWindow", {
+    const iframe = container.querySelector('iframe')!;
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: vi.fn() },
     });
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          namespace: "wrong-ns",
-          id: "reply-id",
+          messageType: messageTypes['handshake-reply'],
+          namespace: 'wrong-ns',
+          id: 'reply-id',
         },
       }),
     );
 
     window.dispatchEvent(
-      new MessageEvent("message", {
+      new MessageEvent('message', {
         data: {
           contentType: eventContentType,
-          messageType: messageTypes["handshake-reply"],
-          namespace: "test-ns",
-          id: "reply-id-2",
+          messageType: messageTypes['handshake-reply'],
+          namespace: 'test-ns',
+          id: 'reply-id-2',
         },
       }),
     );
 
     const api = await handshakePromise;
-    expect(api).toHaveProperty("on");
+    expect(api).toHaveProperty('on');
   });
 });

@@ -1,24 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, cleanup } from "@testing-library/react";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { eventContentType, messageTypes } from "@izod/core";
-import { child, parent } from "../src/index.js";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act, cleanup } from '@testing-library/react';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+import { eventContentType, messageTypes } from '@izod/core';
+import { child, parent } from '../src/index.js';
 
 function createPassthroughSchema<T>(): StandardSchemaV1<T, T> {
   return {
-    "~standard": {
+    '~standard': {
       version: 1,
-      vendor: "test",
+      vendor: 'test',
       validate: (value: unknown) => ({ value: value as T }),
     },
   };
 }
 
-describe("child.useCreate", () => {
+describe('child.useCreate', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     return () => {
       cleanup();
@@ -26,23 +26,23 @@ describe("child.useCreate", () => {
     };
   });
 
-  it("returns expected API shape", () => {
+  it('returns expected API shape', () => {
     const { result } = renderHook(() => child.useCreate({ container }));
 
-    expect(result.current).toHaveProperty("on");
-    expect(result.current).toHaveProperty("executeHandshake");
-    expect(result.current).toHaveProperty("api");
-    expect(result.current).toHaveProperty("isHandshakeComplete");
-    expect(result.current).toHaveProperty("isHandshakePending");
-    expect(result.current).toHaveProperty("handshakeError");
+    expect(result.current).toHaveProperty('on');
+    expect(result.current).toHaveProperty('executeHandshake');
+    expect(result.current).toHaveProperty('api');
+    expect(result.current).toHaveProperty('isHandshakeComplete');
+    expect(result.current).toHaveProperty('isHandshakePending');
+    expect(result.current).toHaveProperty('handshakeError');
 
-    expect(typeof result.current.on).toBe("function");
-    expect(typeof result.current.executeHandshake).toBe("function");
+    expect(typeof result.current.on).toBe('function');
+    expect(typeof result.current.executeHandshake).toBe('function');
     expect(result.current.isHandshakeComplete).toBe(false);
     expect(result.current.isHandshakePending).toBe(false);
   });
 
-  it("can register event listeners", () => {
+  it('can register event listeners', () => {
     const inboundEvents = {
       testEvent: createPassthroughSchema(),
     };
@@ -50,12 +50,12 @@ describe("child.useCreate", () => {
     const { result } = renderHook(() => child.useCreate({ container, inboundEvents }));
 
     const handler = vi.fn();
-    const unsubscribe = result.current.on("testEvent", handler);
-    expect(typeof unsubscribe).toBe("function");
+    const unsubscribe = result.current.on('testEvent', handler);
+    expect(typeof unsubscribe).toBe('function');
     unsubscribe();
   });
 
-  it("calls onHandshakeComplete callback on success", async () => {
+  it('calls onHandshakeComplete callback on success', async () => {
     const onHandshakeComplete = vi.fn();
 
     const { result } = renderHook(() =>
@@ -69,18 +69,18 @@ describe("child.useCreate", () => {
       result.current.executeHandshake();
     });
 
-    const iframe = container.querySelector("iframe")!;
-    Object.defineProperty(iframe, "contentWindow", {
+    const iframe = container.querySelector('iframe')!;
+    Object.defineProperty(iframe, 'contentWindow', {
       value: { postMessage: vi.fn() },
     });
 
     await act(async () => {
       window.dispatchEvent(
-        new MessageEvent("message", {
+        new MessageEvent('message', {
           data: {
             contentType: eventContentType,
-            messageType: messageTypes["handshake-reply"],
-            id: "test-id",
+            messageType: messageTypes['handshake-reply'],
+            id: 'test-id',
           },
         }),
       );
@@ -90,24 +90,24 @@ describe("child.useCreate", () => {
   });
 });
 
-describe("parent.useConnect", () => {
-  it("returns expected API shape", () => {
+describe('parent.useConnect', () => {
+  it('returns expected API shape', () => {
     const { result } = renderHook(() => parent.useConnect());
 
-    expect(result.current).toHaveProperty("on");
-    expect(result.current).toHaveProperty("executeHandshake");
-    expect(result.current).toHaveProperty("api");
-    expect(result.current).toHaveProperty("isHandshakeComplete");
-    expect(result.current).toHaveProperty("isHandshakePending");
-    expect(result.current).toHaveProperty("handshakeError");
+    expect(result.current).toHaveProperty('on');
+    expect(result.current).toHaveProperty('executeHandshake');
+    expect(result.current).toHaveProperty('api');
+    expect(result.current).toHaveProperty('isHandshakeComplete');
+    expect(result.current).toHaveProperty('isHandshakePending');
+    expect(result.current).toHaveProperty('handshakeError');
 
-    expect(typeof result.current.on).toBe("function");
-    expect(typeof result.current.executeHandshake).toBe("function");
+    expect(typeof result.current.on).toBe('function');
+    expect(typeof result.current.executeHandshake).toBe('function');
     expect(result.current.isHandshakeComplete).toBe(false);
     expect(result.current.isHandshakePending).toBe(false);
   });
 
-  it("can register event listeners", () => {
+  it('can register event listeners', () => {
     const inboundEvents = {
       testEvent: createPassthroughSchema(),
     };
@@ -115,8 +115,8 @@ describe("parent.useConnect", () => {
     const { result } = renderHook(() => parent.useConnect({ inboundEvents }));
 
     const handler = vi.fn();
-    const unsubscribe = result.current.on("testEvent", handler);
-    expect(typeof unsubscribe).toBe("function");
+    const unsubscribe = result.current.on('testEvent', handler);
+    expect(typeof unsubscribe).toBe('function');
     unsubscribe();
   });
 });

@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from "react";
-import { child } from "@izod/react";
-import { z } from "zod";
+import { useRef, useState, useEffect } from 'react';
+import { child } from '@izod/react';
+import { z } from 'zod';
 
 const messageSchema = z.object({
   text: z.string(),
@@ -10,16 +10,16 @@ const messageSchema = z.object({
 type LogEntry = {
   id: number;
   message: string;
-  type: "sent" | "received" | "system" | "error";
+  type: 'sent' | 'received' | 'system' | 'error';
 };
 
 export default function ReactParent({ base }: { base: string }) {
-  const [container] = useState(() => document.createElement("div"));
+  const [container] = useState(() => document.createElement('div'));
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const logIdRef = useRef(0);
 
-  function appendLog(message: string, type: LogEntry["type"]) {
+  function appendLog(message: string, type: LogEntry['type']) {
     setLogs((prev) => [...prev, { id: ++logIdRef.current, message, type }]);
   }
 
@@ -27,9 +27,9 @@ export default function ReactParent({ base }: { base: string }) {
     child.useCreate({
       container,
       url: `${base}react/child`,
-      namespace: "izod-react-demo",
+      namespace: 'izod-react-demo',
       iframeAttributes: {
-        style: "width:100%;height:300px;border:1px solid #e5e7eb;border-radius:8px",
+        style: 'width:100%;height:300px;border:1px solid #e5e7eb;border-radius:8px',
       },
       inboundEvents: {
         childMessage: messageSchema,
@@ -38,47 +38,47 @@ export default function ReactParent({ base }: { base: string }) {
         parentMessage: messageSchema,
       },
       onHandshakeComplete: () => {
-        appendLog("Handshake complete — connection established", "system");
+        appendLog('Handshake complete — connection established', 'system');
       },
       onHandshakeError: (error) => {
-        appendLog(`Handshake failed: ${error.message}`, "error");
+        appendLog(`Handshake failed: ${error.message}`, 'error');
       },
     });
 
   useEffect(() => {
-    const unsubscribe = on("childMessage", (data) => {
-      appendLog(data.text, "received");
+    const unsubscribe = on('childMessage', (data) => {
+      appendLog(data.text, 'received');
     });
     return unsubscribe;
   }, [on]);
 
   useEffect(() => {
-    appendLog("Creating child iframe...", "system");
+    appendLog('Creating child iframe...', 'system');
     executeHandshake();
-    appendLog("Initiating handshake...", "system");
+    appendLog('Initiating handshake...', 'system');
   }, [executeHandshake]);
 
   function sendMessage() {
     const text = input.trim();
     if (!text || !api) return;
-    api.emit("parentMessage", { text, timestamp: Date.now() });
-    appendLog(text, "sent");
-    setInput("");
+    api.emit('parentMessage', { text, timestamp: Date.now() });
+    appendLog(text, 'sent');
+    setInput('');
   }
 
   const statusClass = handshakeError
-    ? "status error"
+    ? 'status error'
     : isHandshakeComplete
-      ? "status connected"
-      : "status pending";
+      ? 'status connected'
+      : 'status pending';
 
   const statusText = handshakeError
-    ? "Error"
+    ? 'Error'
     : isHandshakeComplete
-      ? "Connected"
+      ? 'Connected'
       : isHandshakePending
-        ? "Connecting..."
-        : "Idle";
+        ? 'Connecting...'
+        : 'Idle';
 
   return (
     <>
@@ -98,7 +98,7 @@ export default function ReactParent({ base }: { base: string }) {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") sendMessage();
+            if (event.key === 'Enter') sendMessage();
           }}
         />
         <button disabled={!isHandshakeComplete} onClick={sendMessage}>
@@ -106,10 +106,10 @@ export default function ReactParent({ base }: { base: string }) {
         </button>
       </div>
 
-      <h3 style={{ marginBottom: "0.5rem" }}>Event Log</h3>
+      <h3 style={{ marginBottom: '0.5rem' }}>Event Log</h3>
       <div className="log">
         {logs.map((entry) => {
-          const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[
+          const prefix = { sent: '↑ SENT', received: '↓ RECV', system: '● SYS', error: '✕ ERR' }[
             entry.type
           ];
           return (

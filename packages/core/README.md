@@ -1,5 +1,7 @@
 # @izod/core
 
+![Bundle Size](https://img.shields.io/bundlephobia/minzip/@izod/core) ![npm version](https://badgen.net/npm/v/@izod/core) ![types](https://badgen.net/npm/types/@izod/core)
+
 Type-safe iframe communication engine using the [Standard Schema](https://github.com/standard-schema/standard-schema) interface for runtime validation. No framework dependency.
 
 ## Installation
@@ -21,22 +23,24 @@ pnpm add zod  # or valibot, arktype, etc.
 Called from the **parent** page to create and manage a child iframe.
 
 ```ts
-import { createChild } from "@izod/core";
+import { createChild } from '@izod/core';
 
 const child = createChild({
-  container: document.getElementById("app"), // DOM element to append iframe to
-  url: "https://child.example.com",          // child page URL
-  namespace: "my-app",                       // optional — isolate message channels
-  inboundEvents: childEvents,                // schemas for events FROM the child
-  outboundEvents: parentEvents,              // schemas for events TO the child
-  iframeAttributes: {                        // optional — passed to the iframe element
-    style: "width:100%;height:400px;border:none",
+  container: document.getElementById('app'), // DOM element to append iframe to
+  url: 'https://child.example.com', // child page URL
+  namespace: 'my-app', // optional — isolate message channels
+  inboundEvents: childEvents, // schemas for events FROM the child
+  outboundEvents: parentEvents, // schemas for events TO the child
+  iframeAttributes: {
+    // optional — passed to the iframe element
+    style: 'width:100%;height:400px;border:none',
   },
-  handshakeOptions: {                        // optional
-    maxHandshakeRequests: 10,                // default: 5
-    handshakeRetryInterval: 100,             // default: 1000 (ms)
+  handshakeOptions: {
+    // optional
+    maxHandshakeRequests: 10, // default: 5
+    handshakeRetryInterval: 100, // default: 1000 (ms)
   },
-  enableLogging: false,                      // optional — log internal messages
+  enableLogging: false, // optional — log internal messages
 });
 ```
 
@@ -55,13 +59,13 @@ const child = createChild({
 Called from the **child** page to connect back to the parent.
 
 ```ts
-import { connectToParent } from "@izod/core";
+import { connectToParent } from '@izod/core';
 
 const parent = connectToParent({
-  namespace: "my-app",           // must match the parent's namespace
-  inboundEvents: parentEvents,   // schemas for events FROM the parent
-  outboundEvents: childEvents,   // schemas for events TO the parent
-  enableLogging: false,          // optional
+  namespace: 'my-app', // must match the parent's namespace
+  inboundEvents: parentEvents, // schemas for events FROM the parent
+  outboundEvents: childEvents, // schemas for events TO the parent
+  enableLogging: false, // optional
 });
 ```
 
@@ -76,7 +80,7 @@ const parent = connectToParent({
 Type alias for event schema maps:
 
 ```ts
-import type { EventMap } from "@izod/core";
+import type { EventMap } from '@izod/core';
 
 const events = {
   ping: z.object({ timestamp: z.number() }),
@@ -90,12 +94,12 @@ Each value must be a Standard Schema compliant validator. Schemas must validate 
 
 Event validation errors include a `cause` property:
 
-| Cause | Meaning |
-|-------|---------|
-| `event_name_invalid` | Event name not in the schema map |
-| `event_data_invalid` | Data failed schema validation |
-| `handshake_request_invalid` | Malformed handshake message |
-| `handshake_request_timeout` | Handshake timed out |
+| Cause                       | Meaning                          |
+| --------------------------- | -------------------------------- |
+| `event_name_invalid`        | Event name not in the schema map |
+| `event_data_invalid`        | Data failed schema validation    |
+| `handshake_request_invalid` | Malformed handshake message      |
+| `handshake_request_timeout` | Handshake timed out              |
 
 ## License
 

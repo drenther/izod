@@ -8,10 +8,10 @@ Works with any Standard Schema compliant validator — [zod](https://github.com/
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@izod/core`](./packages/core) | Iframe communication engine — no framework dependency |
-| [`@izod/react`](./packages/react) | React hooks wrapper around `@izod/core` |
+| Package                           | Description                                           |
+| --------------------------------- | ----------------------------------------------------- |
+| [`@izod/core`](./packages/core)   | Iframe communication engine — no framework dependency |
+| [`@izod/react`](./packages/react) | React hooks wrapper around `@izod/core`               |
 
 ## Installation
 
@@ -35,8 +35,8 @@ pnpm add zod       # or valibot, arktype, etc.
 
 ```ts
 // events.ts
-import { z } from "zod";
-import type { EventMap } from "@izod/core";
+import { z } from 'zod';
+import type { EventMap } from '@izod/core';
 
 export const parentEvents = {
   askQuestion: z.object({ question: z.string() }),
@@ -52,41 +52,41 @@ export const childEvents = {
 ### Parent page (creates the iframe)
 
 ```ts
-import { createChild } from "@izod/core";
-import { parentEvents, childEvents } from "./events";
+import { createChild } from '@izod/core';
+import { parentEvents, childEvents } from './events';
 
 const child = createChild({
-  container: document.getElementById("app"),
-  url: "https://child.example.com",
+  container: document.getElementById('app'),
+  url: 'https://child.example.com',
   inboundEvents: childEvents,
   outboundEvents: parentEvents,
 });
 
-child.on("whisper", (data) => {
+child.on('whisper', (data) => {
   console.log(`Child whispered: ${data.message}`);
 });
 
 const api = await child.executeHandshake();
-api.emit("shout", { message: "Hello from parent" });
+api.emit('shout', { message: 'Hello from parent' });
 ```
 
 ### Child page (inside the iframe)
 
 ```ts
-import { connectToParent } from "@izod/core";
-import { parentEvents, childEvents } from "./events";
+import { connectToParent } from '@izod/core';
+import { parentEvents, childEvents } from './events';
 
 const parent = connectToParent({
   inboundEvents: parentEvents,
   outboundEvents: childEvents,
 });
 
-parent.on("shout", (data) => {
+parent.on('shout', (data) => {
   console.log(`Parent shouted: ${data.message}`);
 });
 
 const api = await parent.executeHandshake();
-api.emit("whisper", { message: "Hi from child" });
+api.emit('whisper', { message: 'Hi from child' });
 ```
 
 See individual package READMEs for full API documentation:
@@ -108,11 +108,11 @@ pnpm dev
 
 Any validator implementing the [Standard Schema spec](https://github.com/standard-schema/standard-schema) works out of the box. Schemas must validate **synchronously** — async validators will throw a `TypeError`.
 
-| Validator | Supported |
-|-----------|-----------|
-| zod (v3.24+, v4) | Yes |
-| valibot | Yes |
-| arktype | Yes |
+| Validator        | Supported |
+| ---------------- | --------- |
+| zod (v3.24+, v4) | Yes       |
+| valibot          | Yes       |
+| arktype          | Yes       |
 
 ## Development
 

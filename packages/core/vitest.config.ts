@@ -1,8 +1,8 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: "happy-dom",
+    environment: 'happy-dom',
     environmentOptions: {
       happyDOM: {
         settings: {
@@ -13,11 +13,11 @@ export default defineConfig({
         },
       },
     },
-    setupFiles: ["./tests/setup.ts"],
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
-      provider: "v8",
-      include: ["src/**"],
-      reporter: ["text", "json-summary"],
+      provider: 'v8',
+      include: ['src/**'],
+      reporter: ['text', 'json-summary'],
     },
   },
 });

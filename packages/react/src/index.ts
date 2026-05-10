@@ -4,8 +4,8 @@ import {
   type CreateChildParams,
   type ConnectToParentParams,
   connectToParent,
-} from "@izod/core";
-import { useEffect, useRef, useState, useCallback } from "react";
+} from '@izod/core';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 type AsyncState<T> =
   | { loading: false; value: undefined; error: undefined }
@@ -40,7 +40,7 @@ type CreateChildHandshakeResult<
   IE extends EventMap,
   OE extends EventMap,
   T extends HTMLElement | Element,
-> = Awaited<ReturnType<ReturnType<typeof createChild<IE, OE, T>>["executeHandshake"]>>;
+> = Awaited<ReturnType<ReturnType<typeof createChild<IE, OE, T>>['executeHandshake']>>;
 
 interface UseChildIframeParams<
   IE extends EventMap,
@@ -120,7 +120,7 @@ export const child = {
 } as const;
 
 type ConnectToParentHandshakeResult<IE extends EventMap, OE extends EventMap> = Awaited<
-  ReturnType<ReturnType<typeof connectToParent<IE, OE>>["executeHandshake"]>
+  ReturnType<ReturnType<typeof connectToParent<IE, OE>>['executeHandshake']>
 >;
 
 interface UseParentParams<IE extends EventMap, OE extends EventMap> extends ConnectToParentParams<

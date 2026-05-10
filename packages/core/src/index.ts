@@ -1,40 +1,40 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import crelt from "crelt";
-import { nanoid } from "nanoid";
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+import crelt from 'crelt';
+import { nanoid } from 'nanoid';
 
-export type { StandardSchemaV1 } from "@standard-schema/spec";
+export type { StandardSchemaV1 } from '@standard-schema/spec';
 
-export const eventContentType = "application/x-izod+json" as const;
+export const eventContentType = 'application/x-izod+json' as const;
 
 const createLogger = (enabled: boolean = false): typeof console.info =>
   enabled ? console.info.bind(console) : () => {};
 
 export const messageTypes = {
-  "handshake-request": "handshake-request",
-  "handshake-reply": "handshake-reply",
-  "child-originated-event": "child-originated-event",
-  "parent-originated-event": "parent-originated-event",
+  'handshake-request': 'handshake-request',
+  'handshake-reply': 'handshake-reply',
+  'child-originated-event': 'child-originated-event',
+  'parent-originated-event': 'parent-originated-event',
 } as const;
 
 export const errorCauses = {
-  handshake_request_invalid: "handshake_request_invalid",
-  handshake_request_timeout: "handshake_request_timeout",
-  event_name_invalid: "event_name_invalid",
-  event_data_invalid: "event_data_invalid",
+  handshake_request_invalid: 'handshake_request_invalid',
+  handshake_request_timeout: 'handshake_request_timeout',
+  event_name_invalid: 'event_name_invalid',
+  event_data_invalid: 'event_data_invalid',
 } as const;
 
-const wildcardOrigin = "*";
+const wildcardOrigin = '*';
 
 function resolveOrigin(url?: string) {
   if (!url) {
     return wildcardOrigin;
   }
 
-  const anchor = document.createElement("a");
+  const anchor = document.createElement('a');
   anchor.href = url;
   const protocol = anchor.protocol.length > 4 ? anchor.protocol : window.location.protocol;
   const host = anchor.host.length
-    ? anchor.port === "80" || anchor.port === "443"
+    ? anchor.port === '80' || anchor.port === '443'
       ? anchor.hostname
       : anchor.host
     : window.location.host;
@@ -42,16 +42,16 @@ function resolveOrigin(url?: string) {
 }
 
 export function generateUniqueId(namespace?: string) {
-  return `${namespace ?? "anon"}__${nanoid()}`;
+  return `${namespace ?? 'anon'}__${nanoid()}`;
 }
 
 function validateSync<T extends StandardSchemaV1>(
   schema: T,
   data: unknown,
 ): { success: true; data: StandardSchemaV1.InferOutput<T> } | { success: false; error: string } {
-  const result = schema["~standard"].validate(data);
+  const result = schema['~standard'].validate(data);
   if (result instanceof Promise) {
-    throw new TypeError("Schema validation must be synchronous");
+    throw new TypeError('Schema validation must be synchronous');
   }
   if (result.issues) {
     return { success: false, error: JSON.stringify(result.issues, null, 2) };
@@ -66,27 +66,27 @@ interface BaseMessageData {
 }
 
 function isBaseMessageData(data: unknown): data is BaseMessageData {
-  if (typeof data !== "object" || data === null) return false;
+  if (typeof data !== 'object' || data === null) return false;
   const record = data as Record<string, unknown>;
-  return record["contentType"] === eventContentType && typeof record["id"] === "string";
+  return record['contentType'] === eventContentType && typeof record['id'] === 'string';
 }
 
 export interface HandshakeRequestMessageData extends BaseMessageData {
-  messageType: (typeof messageTypes)["handshake-request"];
+  messageType: (typeof messageTypes)['handshake-request'];
 }
 
 function isHandshakeRequest(data: unknown): data is HandshakeRequestMessageData {
   if (!isBaseMessageData(data)) return false;
-  return "messageType" in data && data.messageType === messageTypes["handshake-request"];
+  return 'messageType' in data && data.messageType === messageTypes['handshake-request'];
 }
 
 export interface HandshakeReplyMessageData extends BaseMessageData {
-  messageType: (typeof messageTypes)["handshake-reply"];
+  messageType: (typeof messageTypes)['handshake-reply'];
 }
 
 function isHandshakeReply(data: unknown): data is HandshakeReplyMessageData {
   if (!isBaseMessageData(data)) return false;
-  return "messageType" in data && data.messageType === messageTypes["handshake-reply"];
+  return 'messageType' in data && data.messageType === messageTypes['handshake-reply'];
 }
 
 interface EventPayload {
@@ -95,31 +95,31 @@ interface EventPayload {
 }
 
 function isEventPayload(data: unknown): data is EventPayload {
-  if (typeof data !== "object" || data === null) return false;
+  if (typeof data !== 'object' || data === null) return false;
   const record = data as Record<string, unknown>;
-  return typeof record["name"] === "string" && "data" in record;
+  return typeof record['name'] === 'string' && 'data' in record;
 }
 
 export interface ParentOriginatedMessageDataEventPayload extends BaseMessageData {
-  messageType: (typeof messageTypes)["parent-originated-event"];
+  messageType: (typeof messageTypes)['parent-originated-event'];
   event: EventPayload;
 }
 
 function isParentOriginatedEvent(data: unknown): data is ParentOriginatedMessageDataEventPayload {
   if (!isBaseMessageData(data)) return false;
-  if (!("messageType" in data) || !("event" in data)) return false;
-  return data.messageType === messageTypes["parent-originated-event"] && isEventPayload(data.event);
+  if (!('messageType' in data) || !('event' in data)) return false;
+  return data.messageType === messageTypes['parent-originated-event'] && isEventPayload(data.event);
 }
 
 export interface ChildOriginatedMessageDataEventPayload extends BaseMessageData {
-  messageType: (typeof messageTypes)["child-originated-event"];
+  messageType: (typeof messageTypes)['child-originated-event'];
   event: EventPayload;
 }
 
 function isChildOriginatedEvent(data: unknown): data is ChildOriginatedMessageDataEventPayload {
   if (!isBaseMessageData(data)) return false;
-  if (!("messageType" in data) || !("event" in data)) return false;
-  return data.messageType === messageTypes["child-originated-event"] && isEventPayload(data.event);
+  if (!('messageType' in data) || !('event' in data)) return false;
+  return data.messageType === messageTypes['child-originated-event'] && isEventPayload(data.event);
 }
 
 function isWhitelistedMessage(message: MessageEvent, allowedOrigin: string) {
@@ -127,7 +127,7 @@ function isWhitelistedMessage(message: MessageEvent, allowedOrigin: string) {
     return true;
   }
 
-  if (typeof allowedOrigin === "string" && message.origin !== allowedOrigin) {
+  if (typeof allowedOrigin === 'string' && message.origin !== allowedOrigin) {
     return false;
   }
 
@@ -173,7 +173,7 @@ export function createChild<
   enableLogging,
 }: CreateChildParams<IE, OE, T>) {
   const parentWindow = window;
-  const iframe = crelt("iframe", iframeAttributes as object) as HTMLIFrameElement;
+  const iframe = crelt('iframe', iframeAttributes as object) as HTMLIFrameElement;
   if (url) {
     iframe.src = url;
   }
@@ -183,9 +183,9 @@ export function createChild<
   const log = createLogger(enableLogging);
 
   function destroy() {
-    log("Destroying child iframe");
+    log('Destroying child iframe');
 
-    parentWindow.removeEventListener("message", handleEventsFromChild, false);
+    parentWindow.removeEventListener('message', handleEventsFromChild, false);
     return iframe.remove();
   }
 
@@ -207,10 +207,10 @@ export function createChild<
       eventName,
       handler,
     });
-    log("Parent Frame Inbound Event Listener added:", eventName);
+    log('Parent Frame Inbound Event Listener added:', eventName);
 
     return () => {
-      log("Parent Frame Inbound Event Listener removed:", eventName);
+      log('Parent Frame Inbound Event Listener removed:', eventName);
 
       listeners.delete(listenerId);
     };
@@ -242,7 +242,7 @@ export function createChild<
       data: dataParseResult.data,
     };
 
-    log("Parent Originated Event sent:", {
+    log('Parent Originated Event sent:', {
       namespace,
       event,
     });
@@ -250,7 +250,7 @@ export function createChild<
     iframe.contentWindow?.postMessage(
       {
         contentType: eventContentType,
-        messageType: messageTypes["parent-originated-event"],
+        messageType: messageTypes['parent-originated-event'],
         namespace,
         id: generateUniqueId(namespace),
         event: {
@@ -265,7 +265,7 @@ export function createChild<
   function handleEventsFromChild(event: MessageEvent) {
     if (!isWhitelistedMessage(event, childOrigin)) {
       log(
-        "Child Originated Event ignored due to non-whitelisted origin:",
+        'Child Originated Event ignored due to non-whitelisted origin:',
         childOrigin,
         event.origin,
       );
@@ -275,7 +275,7 @@ export function createChild<
 
     if (namespace && event.data.namespace !== namespace) {
       log(
-        "Child Originated Event ignored due to namespace mismatch:",
+        'Child Originated Event ignored due to namespace mismatch:',
         namespace,
         event.data.namespace,
       );
@@ -284,12 +284,12 @@ export function createChild<
     }
 
     if (!isChildOriginatedEvent(event.data)) {
-      log("Child Originated Event ignored due to invalid message data:", event);
+      log('Child Originated Event ignored due to invalid message data:', event);
 
       return;
     }
 
-    log("Child Originated Event accepted:", event);
+    log('Child Originated Event accepted:', event);
 
     const { event: eventData } = event.data;
     const { name, data } = eventData;
@@ -299,7 +299,7 @@ export function createChild<
       .forEach(({ handler, eventName }) => {
         const dataParseResult = validateSync(inboundEvents[eventName]!, data);
         if (dataParseResult.success) {
-          log("Child Originated Event Listener Handler invoked:", {
+          log('Child Originated Event Listener Handler invoked:', {
             eventName,
             data: dataParseResult.data,
           });
@@ -327,11 +327,11 @@ export function createChild<
       let handshakeRetryIntervalTimer: ReturnType<typeof setInterval>;
 
       function handleHandshakeReply(event: MessageEvent<HandshakeReplyMessageData>) {
-        log("Handshake Reply Event received:", event);
+        log('Handshake Reply Event received:', event);
 
         if (!isWhitelistedMessage(event, childOrigin)) {
           log(
-            "Handshake Reply Event ignored due to non-whitelisted origin:",
+            'Handshake Reply Event ignored due to non-whitelisted origin:',
             childOrigin,
             event.origin,
           );
@@ -341,7 +341,7 @@ export function createChild<
 
         if (namespace && event.data.namespace !== namespace) {
           log(
-            "Handshake Reply Event ignored due to namespace mismatch:",
+            'Handshake Reply Event ignored due to namespace mismatch:',
             namespace,
             event.data.namespace,
           );
@@ -350,15 +350,15 @@ export function createChild<
         }
 
         if (!isHandshakeReply(event.data)) {
-          log("Handshake Reply Event ignored due to invalid message data:", event);
+          log('Handshake Reply Event ignored due to invalid message data:', event);
 
           return;
         }
 
-        log("Handshake Reply Event accepted:", event);
+        log('Handshake Reply Event accepted:', event);
 
         clearInterval(handshakeRetryIntervalTimer);
-        parentWindow.removeEventListener("message", handleHandshakeReply, false);
+        parentWindow.removeEventListener('message', handleHandshakeReply, false);
 
         const api = {
           destroy,
@@ -371,7 +371,7 @@ export function createChild<
         return resolve(api);
       }
 
-      parentWindow.addEventListener("message", handleHandshakeReply, false);
+      parentWindow.addEventListener('message', handleHandshakeReply, false);
 
       function sendHandshakeRequest() {
         handshakeAttempt++;
@@ -379,14 +379,14 @@ export function createChild<
         iframe.contentWindow?.postMessage(
           {
             contentType: eventContentType,
-            messageType: messageTypes["handshake-request"],
+            messageType: messageTypes['handshake-request'],
             namespace,
             id: generateUniqueId(namespace),
           } satisfies HandshakeRequestMessageData,
           childOrigin,
         );
 
-        log("Handshake Request Sent: Attempt ", handshakeAttempt);
+        log('Handshake Request Sent: Attempt ', handshakeAttempt);
 
         if (handshakeAttempt === finalHandshakeOptions.maxHandshakeRequests) {
           clearInterval(handshakeRetryIntervalTimer);
@@ -402,7 +402,7 @@ export function createChild<
       }
 
       function handleIframeLoad(loadEvent: Event) {
-        log("Iframe Load Event Listener received:", loadEvent);
+        log('Iframe Load Event Listener received:', loadEvent);
 
         sendHandshakeRequest();
         handshakeRetryIntervalTimer = setInterval(
@@ -411,7 +411,7 @@ export function createChild<
         );
       }
 
-      iframe.addEventListener("load", handleIframeLoad, false);
+      iframe.addEventListener('load', handleIframeLoad, false);
 
       container.appendChild(iframe);
 
@@ -419,7 +419,7 @@ export function createChild<
     });
   }
 
-  parentWindow.addEventListener("message", handleEventsFromChild, false);
+  parentWindow.addEventListener('message', handleEventsFromChild, false);
 
   return {
     executeHandshake,
@@ -464,10 +464,10 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
       eventName,
       handler,
     });
-    log("Child Frame Inbound Event Listener added:", eventName);
+    log('Child Frame Inbound Event Listener added:', eventName);
 
     return () => {
-      log("Child Frame Inbound Event Listener removed:", eventName);
+      log('Child Frame Inbound Event Listener removed:', eventName);
 
       listeners.delete(listenerId);
     };
@@ -500,7 +500,7 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
         data: dataParseResult.data,
       };
 
-      log("Child Originated Event Sent:", {
+      log('Child Originated Event Sent:', {
         namespace,
         event,
       });
@@ -508,7 +508,7 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
       parentRef.postMessage(
         {
           contentType: eventContentType,
-          messageType: messageTypes["child-originated-event"],
+          messageType: messageTypes['child-originated-event'],
           namespace,
           event,
           id: generateUniqueId(namespace),
@@ -531,17 +531,17 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
       emit: ReturnType<typeof createEmitter>;
     }>((resolve, reject) => {
       function handleHandshakeRequest(event: MessageEvent<HandshakeRequestMessageData>) {
-        log("Handshake Request Event Listener received:", event);
+        log('Handshake Request Event Listener received:', event);
 
         if (event.source instanceof MessagePort || isEventSourceServiceWorker(event)) {
-          log("Handshake Request Event Listener ignored due to invalid source type:", event.source);
+          log('Handshake Request Event Listener ignored due to invalid source type:', event.source);
 
           return;
         }
 
         if (namespace && event.data.namespace !== namespace) {
           log(
-            "Handshake Request Event Listener ignored due to namespace mismatch:",
+            'Handshake Request Event Listener ignored due to namespace mismatch:',
             namespace,
             event.data.namespace,
           );
@@ -551,21 +551,21 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
 
         if (!isHandshakeRequest(event.data)) {
           reject(
-            new Error("Invalid handshake request message data", {
+            new Error('Invalid handshake request message data', {
               cause: errorCauses.handshake_request_invalid,
             }),
           );
           return;
         }
 
-        child.removeEventListener("message", handleHandshakeRequest, false);
+        child.removeEventListener('message', handleHandshakeRequest, false);
 
         const parentOrigin = event.origin;
 
         function handleEventsFromParent(parentEvent: MessageEvent) {
           if (!isWhitelistedMessage(parentEvent, parentOrigin)) {
             log(
-              "Parent Originated Event ignored due to non-whitelisted origin:",
+              'Parent Originated Event ignored due to non-whitelisted origin:',
               parentOrigin,
               parentEvent.origin,
             );
@@ -575,7 +575,7 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
 
           if (namespace && parentEvent.data.namespace !== namespace) {
             log(
-              "Parent Originated Event ignored due to namespace mismatch:",
+              'Parent Originated Event ignored due to namespace mismatch:',
               namespace,
               parentEvent.data.namespace,
             );
@@ -584,12 +584,12 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
           }
 
           if (!isParentOriginatedEvent(parentEvent.data)) {
-            log("Parent Originated Event ignored due to invalid message data:", parentEvent);
+            log('Parent Originated Event ignored due to invalid message data:', parentEvent);
 
             return;
           }
 
-          log("Parent Originated Event accepted:", parentEvent);
+          log('Parent Originated Event accepted:', parentEvent);
 
           const { event: eventData } = parentEvent.data;
           const { name, data } = eventData;
@@ -599,20 +599,20 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
             .forEach(({ handler, eventName }) => {
               const dataParseResult = validateSync(inboundEvents[eventName]!, data);
               if (dataParseResult.success) {
-                log("Parent Originated Event Listener Handler invoked:", eventName);
+                log('Parent Originated Event Listener Handler invoked:', eventName);
 
                 handler(dataParseResult.data);
               }
             });
         }
-        child.addEventListener("message", handleEventsFromParent, false);
+        child.addEventListener('message', handleEventsFromParent, false);
 
-        log("Handshake Reply sent:", parentOrigin);
+        log('Handshake Reply sent:', parentOrigin);
 
         parentRef.postMessage(
           {
             contentType: eventContentType,
-            messageType: messageTypes["handshake-reply"],
+            messageType: messageTypes['handshake-reply'],
             namespace,
             id: generateUniqueId(namespace),
           } satisfies HandshakeReplyMessageData,
@@ -629,9 +629,9 @@ export function connectToParent<IE extends EventMap, OE extends EventMap>(
         return resolve(api);
       }
 
-      child.addEventListener("message", handleHandshakeRequest, false);
+      child.addEventListener('message', handleHandshakeRequest, false);
 
-      log("Handshake Request Listener added");
+      log('Handshake Request Listener added');
     });
   }
 
