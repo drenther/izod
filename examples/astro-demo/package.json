@@ -1,0 +1,16 @@
+{
+  "name": "@izod/astro-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@izod/core": "workspace:*",
+    "@standard-schema/spec": "catalog:",
+    "astro": "catalog:",
+    "zod": "catalog:"
+  }
+}
