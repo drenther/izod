@@ -27,9 +27,7 @@ describe("child.useCreate", () => {
   });
 
   it("returns expected API shape", () => {
-    const { result } = renderHook(() =>
-      child.useCreate({ container }),
-    );
+    const { result } = renderHook(() => child.useCreate({ container }));
 
     expect(result.current).toHaveProperty("on");
     expect(result.current).toHaveProperty("executeHandshake");
@@ -49,9 +47,7 @@ describe("child.useCreate", () => {
       testEvent: createPassthroughSchema(),
     };
 
-    const { result } = renderHook(() =>
-      child.useCreate({ container, inboundEvents }),
-    );
+    const { result } = renderHook(() => child.useCreate({ container, inboundEvents }));
 
     const handler = vi.fn();
     const unsubscribe = result.current.on("testEvent", handler);
@@ -116,9 +112,7 @@ describe("parent.useConnect", () => {
       testEvent: createPassthroughSchema(),
     };
 
-    const { result } = renderHook(() =>
-      parent.useConnect({ inboundEvents }),
-    );
+    const { result } = renderHook(() => parent.useConnect({ inboundEvents }));
 
     const handler = vi.fn();
     const unsubscribe = result.current.on("testEvent", handler);

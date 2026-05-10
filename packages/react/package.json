@@ -1,11 +1,27 @@
 {
   "name": "@izod/react",
   "version": "2.0.0",
-  "type": "module",
-  "sideEffects": false,
+  "keywords": [
+    "hooks",
+    "iframe",
+    "react",
+    "standard-schema",
+    "typescript"
+  ],
+  "homepage": "https://github.com/drenther/izod",
+  "license": "MIT",
+  "author": {
+    "name": "Soumyajit Pathak"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/drenther/izod.git"
+  },
   "files": [
     "dist"
   ],
+  "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,10 +42,6 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": {
-    "@izod/core": "workspace:*",
-    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
-  },
   "devDependencies": {
     "@izod/core": "workspace:*",
     "@standard-schema/spec": "catalog:",
@@ -45,20 +57,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/drenther/izod.git"
-  },
-  "homepage": "https://github.com/drenther/izod",
-  "author": {
-    "name": "Soumyajit Pathak"
-  },
-  "keywords": [
-    "react",
-    "iframe",
-    "typescript",
-    "standard-schema",
-    "hooks"
-  ],
-  "license": "MIT"
+  "peerDependencies": {
+    "@izod/core": "workspace:*",
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+  }
 }

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Coverage
+coverage
+
 # Turbo
 .turbo
 

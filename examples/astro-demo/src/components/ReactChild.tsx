@@ -19,10 +19,7 @@ export default function ReactChild() {
   const logIdRef = useRef(0);
 
   function appendLog(message: string, type: LogEntry["type"]) {
-    setLogs((prev) => [
-      ...prev,
-      { id: ++logIdRef.current, message, type },
-    ]);
+    setLogs((prev) => [...prev, { id: ++logIdRef.current, message, type }]);
   }
 
   const { on, executeHandshake, api, isHandshakeComplete, isHandshakePending, handshakeError } =
@@ -98,7 +95,9 @@ export default function ReactChild() {
 
       <div className="log">
         {logs.map((entry) => {
-          const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[entry.type];
+          const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[
+            entry.type
+          ];
           return (
             <div key={entry.id} className={`log-entry ${entry.type}`}>
               [{new Date().toLocaleTimeString()}] {prefix}: {entry.message}

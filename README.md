@@ -1,216 +1,135 @@
 # izod
 
-> NOTE: This is very early stage, documentation is not complete and breaking API changes likely ahead. Please use at your own risk. Lock your version in case you use. (Even though I will adhere to semver for updates)
-
 ![Bundle Size](https://img.shields.io/bundlephobia/minzip/@izod/core) ![npm version](https://badgen.net/npm/v/@izod/core) ![types](https://badgen.net/npm/types/@izod/core)
 
-`izod` leverages [zod](https://github.com/colinhacks/zod) to provide a type safe Promise oriented API to manage iframe communication.
+Type-safe iframe communication using the [Standard Schema](https://github.com/standard-schema/standard-schema) interface for runtime validation.
+
+Works with any Standard Schema compliant validator — [zod](https://github.com/colinhacks/zod), [valibot](https://github.com/fabian-hiller/valibot), [arktype](https://github.com/arktypeio/arktype), and more.
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@izod/core`](./packages/core) | Iframe communication engine — no framework dependency |
+| [`@izod/react`](./packages/react) | React hooks wrapper around `@izod/core` |
 
 ## Installation
 
-### core (only)
-
 ```sh
-npm i zod @izod/core
+# Core only
+pnpm add @izod/core
+
+# With React hooks
+pnpm add @izod/core @izod/react
 ```
 
-### react
+You also need a Standard Schema compliant validator as a peer:
 
 ```sh
-npm i zod @izod/core @izod/react
+pnpm add zod       # or valibot, arktype, etc.
 ```
 
-## Usage
+## Quick Start
 
-### @izod/core
+### Define shared event schemas
 
 ```ts
-// common.ts
+// events.ts
+import { z } from "zod";
+import type { EventMap } from "@izod/core";
 
-import { z } from 'zod';
-import type { EventMap } from '@izod/core';
-
-export const parentOriginEvents = {
-  askQuestion: z.object({
-    question: z.string(),
-  }),
-  shout: z.object({
-    message: z.string(),
-  }),
+export const parentEvents = {
+  askQuestion: z.object({ question: z.string() }),
+  shout: z.object({ message: z.string() }),
 } as const satisfies EventMap;
 
-export const childOriginEvents = {
-  answerQuestion: z.object({
-    answer: z.string(),
-  }),
-  whisper: z.object({
-    message: z.string(),
-  }),
+export const childEvents = {
+  answerQuestion: z.object({ answer: z.string() }),
+  whisper: z.object({ message: z.string() }),
 } as const satisfies EventMap;
 ```
 
+### Parent page (creates the iframe)
+
 ```ts
-// parent.html
+import { createChild } from "@izod/core";
+import { parentEvents, childEvents } from "./events";
 
-import { createChild } from '@izod/core';
-
-// create the child instance (not mounted until handshake is executed)
 const child = createChild({
-  container: document.body, // required
-  url: 'http://127.0.0.1:3010', // required
-  inboundEvents: childOriginEvents, // optional
-  outboundEvents: parentOriginEvents, // optional
-  handshakeOptions: {
-    // optional
-    maxHandshakeRequests: 10, // default 5
-    handshakeRetryInterval: 100, // default 1000
-  },
+  container: document.getElementById("app"),
+  url: "https://child.example.com",
+  inboundEvents: childEvents,
+  outboundEvents: parentEvents,
 });
 
-// perfect time to setup event listeners so that they are ready once the handshake is over
-// type safe event listeners for events coming from the child
-child.on('whisper', (data) => {
+child.on("whisper", (data) => {
   console.log(`Child whispered: ${data.message}`);
 });
 
-const childApi = await child.executeHandshake();
-
-// type safe event emitters
-childApi.emit('shout', { message: 'Hello' });
+const api = await child.executeHandshake();
+api.emit("shout", { message: "Hello from parent" });
 ```
 
+### Child page (inside the iframe)
+
 ```ts
-// child.html
+import { connectToParent } from "@izod/core";
+import { parentEvents, childEvents } from "./events";
 
-import { connectToParent } from '@izod/core';
-
-// sets the boilerplate
 const parent = connectToParent({
-  inboundEvents: parentOriginEvents, // optional
-  outboundEvents: childOriginEvents, // optional
+  inboundEvents: parentEvents,
+  outboundEvents: childEvents,
 });
 
-// type safe event listeners for events coming from the parent
-parent.on('shout', (data) => {
+parent.on("shout", (data) => {
   console.log(`Parent shouted: ${data.message}`);
 });
 
-const parentApi = await parent.executeHandshake();
-
-// type safe event emitters
-parentApi.emit('whisper', { message: 'Hi' });
+const api = await parent.executeHandshake();
+api.emit("whisper", { message: "Hi from child" });
 ```
 
-### @izod/react
+See individual package READMEs for full API documentation:
 
-```tsx
-// parent.tsx
+- [`@izod/core` README](./packages/core/README.md)
+- [`@izod/react` README](./packages/react/README.md)
 
-import { child } from '@izod/react';
+## Examples
 
-function Parent() {
-  //  accepts all the parameters that `createChild` from @izod/core does
-  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
-  // `on` can be used to attach event listeners
-  const { on, api, executeHandshake } = child.useCreate({
-    container: document.body, // required
-    url: 'http://127.0.0.1:3010', // required
-    inboundEvents: parentOriginEvents, // optional
-    outboundEvents: childOriginEvents, // optional
-    handshakeOptions: {
-      // optional
-      maxHandshakeRequests: 10, // default 5
-      handshakeRetryInterval: 100, // default 1000
-    },
-    onHandshakeComplete(api) {
-      // callback called when handshake is successful
-    },
-    onHandshakeError(error) {
-      // callback called when handshake fails
-    },
-    // remove the iframe on component unmount
-    destroyOnUnmount: false, // default false - optional
-  });
+The [`examples/`](./examples) directory contains a working Astro demo app with both core and React examples.
 
-  // `child.useEventListener` takes care of this boilerplate for you but is not fully type safe as of now
-  // to add event listeners
-  // prefer this over `onHandshakeComplete` for attaching event listeners
-  useEffect(() => {
-    if (api) {
-      // function is returned from `.on` that can be called to unsubscribe
-      const off = on('askQuestion', (data) => {
-        console.log('Question: ', data.question);
-      });
-
-      // return that from the useEffect for cleanup
-      return off;
-    }
-  }, [api]);
-
-  const ranOnce = useRef(false);
-  useEffect(() => {
-    if (ranOnce.current) {
-      return;
-    }
-
-    executeHandshake();
-    ranOnce.current = true;
-  }, []);
-
-  const shout = () => {
-    api.emit('shout', { message: 'Hello' });
-  };
-}
+```sh
+pnpm install
+cd examples/astro-demo
+pnpm dev
 ```
 
-```tsx
-// child.tsx
+## Standard Schema Compatibility
 
-import { parent } from '@izod/react';
+Any validator implementing the [Standard Schema spec](https://github.com/standard-schema/standard-schema) works out of the box. Schemas must validate **synchronously** — async validators will throw a `TypeError`.
 
-function Child() {
-  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
-  const { on, api, executeHandshake } = parent.useConnect({
-    inboundEvents: parentOriginEvents,
-    outboundEvents: childOriginEvents,
-    onHandshakeComplete(api) {
-      // callback called when handshake is successful
-    },
-    onHandshakeError(error) {
-      // callback called when handshake fails
-    },
-  });
+| Validator | Supported |
+|-----------|-----------|
+| zod (v3.24+, v4) | Yes |
+| valibot | Yes |
+| arktype | Yes |
 
-  // `parent.useEventListener` takes care of this boilerplate for you but is not fully type safe as of now
-  // to add event listeners
-  useEffect(() => {
-    // function is returned from `.on` that can be called to unsubscribe
-    if (api) {
-      const off = api.on('shout', (data) => {
-        console.log(`Parent shouted: ${data.message}`);
-      });
+## Development
 
-      // return that from the useEffect for cleanup
-      return off;
-    }
-  }, [api]);
-
-  const ranOnce = useRef(false);
-  useEffect(() => {
-    if (ranOnce.current) {
-      return;
-    }
-
-    executeHandshake();
-    ranOnce.current = true;
-  }, []);
-
-  const whisper = () => {
-    api.emit('whisper', { message: 'Hi' });
-  };
-}
+```sh
+pnpm install
+pnpm run build        # build all packages
+pnpm run test         # run tests
+pnpm run test:coverage # run tests with coverage
+pnpm run typecheck    # type-check
+pnpm run lint         # oxlint
+pnpm run format:check # check formatting
 ```
 
-## Prior Art (packages I ~~copied~~ adapted code from)
+## Prior Art
 
 - [Postmate](https://github.com/dollarshaveclub/postmate)
+
+## License
+
+MIT

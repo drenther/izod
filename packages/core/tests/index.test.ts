@@ -9,9 +9,7 @@ import {
 } from "../src/index.js";
 
 function createMockSchema<T>(
-  validateFn: (
-    value: unknown,
-  ) => StandardSchemaV1.Result<T>,
+  validateFn: (value: unknown) => StandardSchemaV1.Result<T>,
 ): StandardSchemaV1<T, T> {
   return {
     "~standard": {
@@ -26,9 +24,7 @@ function createPassthroughSchema<T>(): StandardSchemaV1<T, T> {
   return createMockSchema((value) => ({ value: value as T }));
 }
 
-function createFailingSchema(
-  issues: StandardSchemaV1.Issue[],
-): StandardSchemaV1 {
+function createFailingSchema(issues: StandardSchemaV1.Issue[]): StandardSchemaV1 {
   return createMockSchema(() => ({ issues }));
 }
 
@@ -153,18 +149,13 @@ describe("Standard Schema validation", () => {
 
     return handshakePromise.then((api) => {
       expect(() =>
-        (api.emit as (name: string, data: unknown) => void)(
-          "invalidEvent",
-          "data",
-        ),
+        (api.emit as (name: string, data: unknown) => void)("invalidEvent", "data"),
       ).toThrow("not defined in the outboundEvents map");
     });
   });
 
   it("throws on invalid data for emit", () => {
-    const issues: StandardSchemaV1.Issue[] = [
-      { message: "invalid data" },
-    ];
+    const issues: StandardSchemaV1.Issue[] = [{ message: "invalid data" }];
     const outboundEvents = {
       testEvent: createFailingSchema(issues),
     };
@@ -227,9 +218,7 @@ describe("Standard Schema validation", () => {
 
     return handshakePromise.then((api) => {
       expect(() => api.emit("testEvent", "data")).toThrow(TypeError);
-      expect(() => api.emit("testEvent", "data")).toThrow(
-        "Schema validation must be synchronous",
-      );
+      expect(() => api.emit("testEvent", "data")).toThrow("Schema validation must be synchronous");
     });
   });
 

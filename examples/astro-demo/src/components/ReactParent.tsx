@@ -20,10 +20,7 @@ export default function ReactParent({ base }: { base: string }) {
   const logIdRef = useRef(0);
 
   function appendLog(message: string, type: LogEntry["type"]) {
-    setLogs((prev) => [
-      ...prev,
-      { id: ++logIdRef.current, message, type },
-    ]);
+    setLogs((prev) => [...prev, { id: ++logIdRef.current, message, type }]);
   }
 
   const { on, executeHandshake, api, isHandshakeComplete, isHandshakePending, handshakeError } =
@@ -87,9 +84,11 @@ export default function ReactParent({ base }: { base: string }) {
     <>
       <span className={statusClass}>{statusText}</span>
 
-      <div ref={(node) => {
-        if (node && !node.contains(container)) node.appendChild(container);
-      }} />
+      <div
+        ref={(node) => {
+          if (node && !node.contains(container)) node.appendChild(container);
+        }}
+      />
 
       <div className="controls">
         <input
@@ -110,7 +109,9 @@ export default function ReactParent({ base }: { base: string }) {
       <h3 style={{ marginBottom: "0.5rem" }}>Event Log</h3>
       <div className="log">
         {logs.map((entry) => {
-          const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[entry.type];
+          const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[
+            entry.type
+          ];
           return (
             <div key={entry.id} className={`log-entry ${entry.type}`}>
               [{new Date().toLocaleTimeString()}] {prefix}: {entry.message}
