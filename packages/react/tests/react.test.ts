@@ -14,6 +14,24 @@ function createPassthroughSchema<T>(): StandardSchemaV1<T, T> {
   };
 }
 
+function completeParentHandshake(container: HTMLElement) {
+  const iframe = container.querySelector('iframe')!;
+  Object.defineProperty(iframe, 'contentWindow', {
+    value: { postMessage: vi.fn() },
+    configurable: true,
+  });
+
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      data: {
+        contentType: eventContentType,
+        messageType: messageTypes['handshake-reply'],
+        id: 'test-id',
+      },
+    }),
+  );
+}
+
 describe('child.useCreate', () => {
   let container: HTMLElement;
 
@@ -69,28 +87,82 @@ describe('child.useCreate', () => {
       result.current.executeHandshake();
     });
 
-    const iframe = container.querySelector('iframe')!;
-    Object.defineProperty(iframe, 'contentWindow', {
-      value: { postMessage: vi.fn() },
-    });
-
     await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: {
-            contentType: eventContentType,
-            messageType: messageTypes['handshake-reply'],
-            id: 'test-id',
-          },
-        }),
-      );
+      completeParentHandshake(container);
     });
 
     expect(onHandshakeComplete).toHaveBeenCalled();
+    expect(result.current.isHandshakeComplete).toBe(true);
+    expect(result.current.api).toBeDefined();
+  });
+
+  it('sets isHandshakePending while handshake is in progress', async () => {
+    const { result } = renderHook(() => child.useCreate({ container }));
+
+    expect(result.current.isHandshakePending).toBe(false);
+
+    act(() => {
+      result.current.executeHandshake();
+    });
+
+    expect(result.current.isHandshakePending).toBe(true);
+
+    await act(async () => {
+      completeParentHandshake(container);
+    });
+
+    expect(result.current.isHandshakePending).toBe(false);
+    expect(result.current.isHandshakeComplete).toBe(true);
+  });
+
+  it('calls onHandshakeError on failure', async () => {
+    vi.useFakeTimers();
+    const onHandshakeError = vi.fn();
+
+    const { result } = renderHook(() =>
+      child.useCreate({
+        container,
+        onHandshakeError,
+        handshakeOptions: {
+          maxHandshakeRequests: 1,
+          handshakeRetryInterval: 10,
+        },
+      }),
+    );
+
+    act(() => {
+      result.current.executeHandshake();
+    });
+
+    const iframe = container.querySelector('iframe')!;
+    Object.defineProperty(iframe, 'contentWindow', {
+      value: { postMessage: vi.fn() },
+      configurable: true,
+    });
+
+    await act(async () => {
+      iframe.dispatchEvent(new Event('load'));
+    });
+
+    await vi.waitFor(() => {
+      expect(result.current.handshakeError).toBeDefined();
+    });
+
+    expect(onHandshakeError).toHaveBeenCalled();
+    expect(result.current.handshakeError).toBeInstanceOf(Error);
+    expect(result.current.isHandshakeComplete).toBe(false);
+
+    vi.useRealTimers();
   });
 });
 
 describe('parent.useConnect', () => {
+  beforeEach(() => {
+    return () => {
+      cleanup();
+    };
+  });
+
   it('returns expected API shape', () => {
     const { result } = renderHook(() => parent.useConnect());
 
@@ -118,5 +190,75 @@ describe('parent.useConnect', () => {
     const unsubscribe = result.current.on('testEvent', handler);
     expect(typeof unsubscribe).toBe('function');
     unsubscribe();
+  });
+
+  it('completes handshake and sets api', async () => {
+    const parentPostMessage = vi.spyOn(window.parent, 'postMessage').mockImplementation(() => {});
+
+    const onHandshakeComplete = vi.fn();
+
+    const { result } = renderHook(() =>
+      parent.useConnect({
+        onHandshakeComplete,
+      }),
+    );
+
+    act(() => {
+      result.current.executeHandshake();
+    });
+
+    expect(result.current.isHandshakePending).toBe(true);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            contentType: eventContentType,
+            messageType: messageTypes['handshake-request'],
+            id: 'req-1',
+          },
+          origin: 'https://parent.example.com',
+          source: window,
+        }),
+      );
+    });
+
+    expect(onHandshakeComplete).toHaveBeenCalled();
+    expect(result.current.isHandshakeComplete).toBe(true);
+    expect(result.current.api).toBeDefined();
+    expect(result.current.api).toHaveProperty('emit');
+
+    parentPostMessage.mockRestore();
+  });
+
+  it('calls onHandshakeError on invalid request', async () => {
+    const onHandshakeError = vi.fn();
+
+    const { result } = renderHook(() =>
+      parent.useConnect({
+        onHandshakeError,
+      }),
+    );
+
+    act(() => {
+      result.current.executeHandshake();
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            contentType: eventContentType,
+            messageType: 'garbage',
+            id: 'req-bad',
+          },
+          source: window,
+        }),
+      );
+    });
+
+    expect(onHandshakeError).toHaveBeenCalled();
+    expect(result.current.handshakeError).toBeInstanceOf(Error);
+    expect(result.current.isHandshakeComplete).toBe(false);
   });
 });
