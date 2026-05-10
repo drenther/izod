@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,3 +35,44 @@ jobs:
       - run: pnpm run test
       - run: pnpm run test:coverage
       - run: pnpm run build
+
+      - name: Post coverage comment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          COMMENT_MARKER="<!-- izod-coverage -->"
+          BODY="$COMMENT_MARKER
+          ## Coverage Report
+
+          | Package | Statements | Branches | Functions | Lines |
+          |---------|-----------|----------|-----------|-------|"
+
+          for pkg in packages/core packages/react; do
+            SUMMARY="$pkg/coverage/coverage-summary.json"
+            if [ ! -f "$SUMMARY" ]; then
+              continue
+            fi
+
+            NAME=$(jq -r '.total | "\(.statements.pct)% | \(.branches.pct)% | \(.functions.pct)% | \(.lines.pct)%"' "$SUMMARY")
+            PKG_NAME=$(jq -r '.name' "$pkg/package.json")
+            BODY="$BODY
+          | \`$PKG_NAME\` | $NAME |"
+          done
+
+          BODY="$BODY
+
+          *Updated by CI — $(date -u '+%Y-%m-%d %H:%M UTC')*"
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | startswith(\"$COMMENT_MARKER\")) | .id" \
+            | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              -X PATCH -f body="$BODY"
+          else
+            gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+              -X POST -f body="$BODY"
+          fi
