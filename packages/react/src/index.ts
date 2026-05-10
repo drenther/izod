@@ -1,35 +1,62 @@
 import {
   createChild,
-  EventMap,
+  type EventMap,
   type CreateChildParams,
   type ConnectToParentParams,
   connectToParent,
-} from '@izod/core';
-import { useEffect, useRef } from 'react';
-import useAsyncFn from 'react-use/lib/useAsyncFn';
+} from "@izod/core";
+import { useEffect, useRef, useState, useCallback } from "react";
 
-// a typescript trick to get the strictly inferred return type of a function with generics
-class CreateChildHandshakeWrapper<
+type AsyncState<T> =
+  | { loading: false; value: undefined; error: undefined }
+  | { loading: true; value: undefined; error: undefined }
+  | { loading: false; value: T; error: undefined }
+  | { loading: false; value: undefined; error: Error };
+
+function useAsyncCallback<T>(asyncFn: () => Promise<T>) {
+  const [state, setState] = useState<AsyncState<T>>({
+    loading: false,
+    value: undefined,
+    error: undefined,
+  });
+
+  const execute = useCallback(() => {
+    setState({ loading: true, value: undefined, error: undefined });
+    asyncFn().then(
+      (value) =>
+        setState({ loading: false, value, error: undefined }),
+      (error: unknown) =>
+        setState({
+          loading: false,
+          value: undefined,
+          error: error instanceof Error ? error : new Error(String(error)),
+        }),
+    );
+  }, [asyncFn]);
+
+  return [state, execute] as const;
+}
+
+type CreateChildHandshakeResult<
   IE extends EventMap,
   OE extends EventMap,
   T extends HTMLElement | Element,
-> {
-  wrapped = (params: CreateChildParams<IE, OE, T>) =>
-    createChild(params)['executeHandshake']();
-}
+> = Awaited<
+  ReturnType<ReturnType<typeof createChild<IE, OE, T>>["executeHandshake"]>
+>;
+
 interface UseChildIframeParams<
   IE extends EventMap,
   OE extends EventMap,
   T extends HTMLElement | Element,
 > extends CreateChildParams<IE, OE, T> {
   onHandshakeComplete?: (
-    api: NonNullable<
-      Awaited<ReturnType<CreateChildHandshakeWrapper<IE, OE, T>['wrapped']>>
-    >,
+    api: CreateChildHandshakeResult<IE, OE, T>,
   ) => void;
   onHandshakeError?: (error: Error) => void;
   destroyOnUnmount?: boolean;
 }
+
 function useCreateChildIframe<
   IE extends EventMap,
   OE extends EventMap,
@@ -40,11 +67,13 @@ function useCreateChildIframe<
   destroyOnUnmount,
   ...props
 }: UseChildIframeParams<IE, OE, T>) {
-  const child = useRef(createChild(props));
-  const [handshakeState, executeHandshake] = useAsyncFn(
-    child.current.executeHandshake,
+  const childRef = useRef(createChild(props));
+  const executeHandshakeFn = useCallback(
+    () => childRef.current.executeHandshake(),
     [],
   );
+  const [handshakeState, executeHandshake] =
+    useAsyncCallback(executeHandshakeFn);
 
   const onHandshakeCompleteCallbackRef =
     useRef<typeof onHandshakeComplete>(onHandshakeComplete);
@@ -52,13 +81,13 @@ function useCreateChildIframe<
     useRef<typeof onHandshakeError>(onHandshakeError);
   const destroyOnUnmountRef = useRef<boolean>(destroyOnUnmount ?? true);
 
-  const apiRef = useRef<typeof handshakeState.value>();
+  const apiRef = useRef<typeof handshakeState.value>(undefined);
 
   useEffect(() => {
     const api = apiRef.current;
-    const destroyOnUnmount = destroyOnUnmountRef.current;
+    const shouldDestroy = destroyOnUnmountRef.current;
     return () => {
-      if (destroyOnUnmount && api) {
+      if (shouldDestroy && api) {
         api.destroy();
       }
     };
@@ -74,9 +103,9 @@ function useCreateChildIframe<
       onHandshakeSettledEffectRan.current = true;
       apiRef.current = handshakeState.value;
 
-      const onHandshakeComplete = onHandshakeCompleteCallbackRef.current;
-      if (onHandshakeComplete) {
-        onHandshakeComplete(handshakeState.value);
+      const callback = onHandshakeCompleteCallbackRef.current;
+      if (callback) {
+        callback(handshakeState.value);
       }
     } else if (handshakeState.error) {
       onHandshakeSettledEffectRan.current = true;
@@ -88,7 +117,7 @@ function useCreateChildIframe<
   }, [handshakeState]);
 
   return {
-    on: child.current.on,
+    on: childRef.current.on,
     executeHandshake,
     api: handshakeState.value,
     isHandshakeComplete: handshakeState.value !== undefined,
@@ -101,22 +130,21 @@ export const child = {
   useCreate: useCreateChildIframe,
 } as const;
 
-class ConnectToParentHandshakeWrapper<
+type ConnectToParentHandshakeResult<
   IE extends EventMap,
   OE extends EventMap,
-> {
-  wrapped = (params: ConnectToParentParams<IE, OE>) =>
-    connectToParent(params).executeHandshake();
-}
+> = Awaited<
+  ReturnType<ReturnType<typeof connectToParent<IE, OE>>["executeHandshake"]>
+>;
+
 interface UseParentParams<IE extends EventMap, OE extends EventMap>
   extends ConnectToParentParams<IE, OE> {
   onHandshakeComplete?: (
-    api: NonNullable<
-      Awaited<ReturnType<ConnectToParentHandshakeWrapper<IE, OE>['wrapped']>>
-    >,
+    api: ConnectToParentHandshakeResult<IE, OE>,
   ) => void;
   onHandshakeError?: (error: Error) => void;
 }
+
 function useConnectToParent<IE extends EventMap, OE extends EventMap>(
   {
     onHandshakeComplete,
@@ -124,18 +152,20 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
     ...props
   }: UseParentParams<IE, OE> = {} as UseParentParams<IE, OE>,
 ) {
-  const parent = useRef(connectToParent(props));
-  const [handshakeState, executeHandshake] = useAsyncFn(
-    parent.current.executeHandshake,
+  const parentRef = useRef(connectToParent(props));
+  const executeHandshakeFn = useCallback(
+    () => parentRef.current.executeHandshake(),
     [],
   );
+  const [handshakeState, executeHandshake] =
+    useAsyncCallback(executeHandshakeFn);
 
   const onHandshakeCompleteCallbackRef =
     useRef<typeof onHandshakeComplete>(onHandshakeComplete);
   const onHandshakeErrorCallbackRef =
     useRef<typeof onHandshakeError>(onHandshakeError);
 
-  const apiRef = useRef<typeof handshakeState.value>();
+  const apiRef = useRef<typeof handshakeState.value>(undefined);
 
   const onHandshakeSettledEffectRan = useRef<boolean>(false);
   useEffect(() => {
@@ -147,9 +177,9 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
       onHandshakeSettledEffectRan.current = true;
       apiRef.current = handshakeState.value;
 
-      const onHandshakeComplete = onHandshakeCompleteCallbackRef.current;
-      if (onHandshakeComplete) {
-        onHandshakeComplete(handshakeState.value);
+      const callback = onHandshakeCompleteCallbackRef.current;
+      if (callback) {
+        callback(handshakeState.value);
       }
     } else if (handshakeState.error) {
       onHandshakeSettledEffectRan.current = true;
@@ -162,7 +192,7 @@ function useConnectToParent<IE extends EventMap, OE extends EventMap>(
 
   return {
     executeHandshake,
-    on: parent.current.on,
+    on: parentRef.current.on,
     api: handshakeState.value,
     isHandshakeComplete: handshakeState.value !== undefined,
     isHandshakePending: handshakeState.loading,

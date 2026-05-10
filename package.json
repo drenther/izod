@@ -1,14 +1,29 @@
 {
   "name": "izod-monorepo",
-  "private": false,
-  "version": "1.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
+    "build": "turbo run build",
     "dev": "turbo run dev",
-    "build": "turbo run build"
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "typecheck": "turbo run typecheck",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo run build && changeset publish",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "prettier": "3.0.1",
+    "@changesets/cli": "2.31.0",
+    "@commitlint/cli": "20.5.3",
+    "@commitlint/config-conventional": "20.5.3",
+    "husky": "9.1.7",
+    "oxfmt": "0.47.0",
+    "oxlint": "1.62.0",
     "turbo": "2.5.6"
   },
   "repository": {
@@ -19,15 +34,9 @@
   "author": {
     "name": "Soumyajit Pathak"
   },
-  "keywords": [
-    "react",
-    "iframe",
-    "typescript",
-    "zod"
-  ],
   "license": "MIT",
-  "packageManager": "pnpm@10.16.1",
-  "pnpm": {
-    "onlyBuiltDependencies": []
-  }
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "packageManager": "pnpm@11.0.9"
 }

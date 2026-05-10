@@ -1,50 +1,49 @@
 {
   "name": "@izod/react",
-  "private": false,
-  "version": "1.1.0",
+  "version": "2.0.0",
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist"
   ],
-  "module": "./dist/index.es.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.es.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": {
+      "default": "./package.json"
     }
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react-use": "17.6.0"
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "zod": "^2.0.0 || ^3.0.0",
-    "react": "^16.8.0  || ^17.0.0 || ^18.0.0 || ^19.0.0",
-    "@izod/core": "1.1.0"
+    "@izod/core": "workspace:*",
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@izod/core": "workspace:*",
-    "@types/react": "18.2.15",
-    "@types/react-dom": "18.2.7",
-    "@typescript-eslint/eslint-plugin": "6.0.0",
-    "@typescript-eslint/parser": "6.0.0",
-    "@vitejs/plugin-react": "4.0.3",
-    "eslint": "8.45.0",
-    "eslint-plugin-react-hooks": "4.6.0",
-    "eslint-plugin-react-refresh": "0.4.3",
-    "typescript": "5.8.2",
-    "vite": "4.4.5",
-    "vite-plugin-dts": "3.5.1",
-    "zod": "3.24.2",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "@standard-schema/spec": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "repository": {
     "type": "git",
@@ -58,7 +57,8 @@
     "react",
     "iframe",
     "typescript",
-    "zod"
+    "standard-schema",
+    "hooks"
   ],
   "license": "MIT"
 }
