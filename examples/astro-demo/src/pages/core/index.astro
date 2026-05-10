@@ -1,0 +1,136 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>izod — Parent Page</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; }
+      body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 3rem 2rem; }
+      h1 { margin-bottom: 0.5rem; }
+      .subtitle { color: #666; margin-bottom: 1.5rem; }
+      .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+      input { flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+      button { padding: 0.5rem 1rem; border: none; border-radius: 4px; background: #2563eb; color: white; cursor: pointer; font-size: 1rem; }
+      button:hover { background: #1d4ed8; }
+      button:disabled { background: #93c5fd; cursor: not-allowed; }
+      iframe { width: 100%; height: 300px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem; }
+      .log { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.875rem; white-space: pre-wrap; min-height: 100px; max-height: 300px; overflow-y: auto; }
+      .log-entry { margin-bottom: 0.25rem; }
+      .log-entry.sent { color: #2563eb; }
+      .log-entry.received { color: #16a34a; }
+      .log-entry.system { color: #9333ea; }
+      .log-entry.error { color: #dc2626; }
+      .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+      .status.pending { background: #fef3c7; color: #92400e; }
+      .status.connected { background: #d1fae5; color: #065f46; }
+      .status.error { background: #fee2e2; color: #991b1b; }
+      .back { display: inline-block; margin-bottom: 1rem; color: #2563eb; text-decoration: none; font-size: 0.85rem; }
+      .back:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <a class="back" href={base}>&larr; Back to examples</a>
+    <h1>izod — Core Parent Page</h1>
+    <p class="subtitle">Using @izod/core directly — createChild + connectToParent with zod validation</p>
+
+    <span id="status" class="status pending">Connecting...</span>
+
+    <div id="iframe-container"></div>
+
+    <div class="controls">
+      <input id="message-input" type="text" placeholder="Type a message to send to child..." disabled />
+      <button id="send-btn" disabled>Send</button>
+    </div>
+
+    <h3 style="margin-bottom: 0.5rem;">Event Log</h3>
+    <div id="log" class="log"></div>
+
+    <script>
+      import { createChild } from "@izod/core";
+      import { z } from "zod";
+
+      const base = document.querySelector("html")?.dataset.base ?? "/izod";
+
+      const messageSchema = z.object({
+        text: z.string(),
+        timestamp: z.number(),
+      });
+
+      const logEl = document.getElementById("log")!;
+      const statusEl = document.getElementById("status")!;
+      const inputEl = document.getElementById("message-input") as HTMLInputElement;
+      const sendBtn = document.getElementById("send-btn") as HTMLButtonElement;
+      const container = document.getElementById("iframe-container")!;
+
+      function appendLog(message: string, type: "sent" | "received" | "system" | "error") {
+        const entry = document.createElement("div");
+        entry.className = `log-entry ${type}`;
+        const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[type];
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${prefix}: ${message}`;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      appendLog("Creating child iframe...", "system");
+
+      const childInstance = createChild({
+        container,
+        url: `${import.meta.env.BASE_URL}core/child`,
+        namespace: "izod-demo",
+        iframeAttributes: { style: "width:100%;height:300px;border:1px solid #e5e7eb;border-radius:8px" },
+        inboundEvents: {
+          childMessage: messageSchema,
+        },
+        outboundEvents: {
+          parentMessage: messageSchema,
+        },
+      });
+
+      childInstance.on("childMessage", (data) => {
+        appendLog(`${data.text}`, "received");
+      });
+
+      appendLog("Initiating handshake...", "system");
+
+      childInstance
+        .executeHandshake()
+        .then((connection) => {
+          statusEl.textContent = "Connected";
+          statusEl.className = "status connected";
+          inputEl.disabled = false;
+          sendBtn.disabled = false;
+          appendLog("Handshake complete — connection established", "system");
+
+          function sendMessage() {
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            connection.emit("parentMessage", {
+              text,
+              timestamp: Date.now(),
+            });
+            appendLog(text, "sent");
+            inputEl.value = "";
+            inputEl.focus();
+          }
+
+          sendBtn.addEventListener("click", sendMessage);
+          inputEl.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") sendMessage();
+          });
+        })
+        .catch((error: unknown) => {
+          statusEl.textContent = "Error";
+          statusEl.className = "status error";
+          appendLog(
+            `Handshake failed: ${error instanceof Error ? error.message : String(error)}`,
+            "error",
+          );
+        });
+    </script>
+  </body>
+</html>

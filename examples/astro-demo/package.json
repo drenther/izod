@@ -8,9 +8,17 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/react": "catalog:",
     "@izod/core": "workspace:*",
+    "@izod/react": "workspace:*",
     "@standard-schema/spec": "catalog:",
     "astro": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:"
   }
 }

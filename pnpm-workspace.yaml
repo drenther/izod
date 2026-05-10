@@ -6,8 +6,11 @@ trustPolicy: no-downgrade
 onlyBuiltDependencies: []
 
 packages:
-  - 'packages/*'
-  - 'examples/*'
+  - "packages/*"
+  - "examples/*"
+
+overrides:
+  semver: "7.7.4"
 
 catalog:
   # Build
@@ -28,4 +31,5 @@ catalog:
   react-dom: "19.2.5"
   # Examples
   astro: "6.2.1"
+  "@astrojs/react": "5.0.4"
   zod: "4.3.6"
