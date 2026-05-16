@@ -1,0 +1,60 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export type AsyncState<T> =
+  | { loading: boolean }
+  | { loading: boolean; value: T }
+  | { loading: boolean; error: Error };
+
+type FunctionReturningPromise = (...args: never[]) => Promise<unknown>;
+
+export function useAsyncCallback<TFn extends FunctionReturningPromise>(
+  asyncFn: TFn,
+): [
+  AsyncState<Awaited<ReturnType<TFn>>>,
+  (...args: Parameters<TFn>) => Promise<Awaited<ReturnType<TFn>> | undefined>,
+] {
+  type TResult = Awaited<ReturnType<TFn>>;
+
+  const lastCallId = useRef(0);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const [state, setState] = useState<AsyncState<TResult>>({
+    loading: false,
+  });
+
+  const execute = useCallback(
+    (...args: Parameters<TFn>): Promise<TResult | undefined> => {
+      const callId = ++lastCallId.current;
+
+      if (!state.loading) {
+        setState((previousState) => ({ ...previousState, loading: true }));
+      }
+
+      return (asyncFn as (...args: Parameters<TFn>) => Promise<TResult>)(...args).then(
+        (value) => {
+          if (mountedRef.current && callId === lastCallId.current) {
+            setState({ loading: false, value, error: undefined });
+          }
+          return value;
+        },
+        (error: unknown) => {
+          const normalizedError = error instanceof Error ? error : new Error(String(error));
+          if (mountedRef.current && callId === lastCallId.current) {
+            setState({ loading: false, value: undefined, error: normalizedError });
+          }
+          return;
+        },
+      );
+    },
+    [asyncFn, state.loading],
+  );
+
+  return [state, execute];
+}

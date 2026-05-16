@@ -5,36 +5,8 @@ import {
   type ConnectToParentParams,
   connectToParent,
 } from '@izod/core';
-import { useEffect, useRef, useState, useCallback } from 'react';
-
-type AsyncState<T> =
-  | { loading: false; value: undefined; error: undefined }
-  | { loading: true; value: undefined; error: undefined }
-  | { loading: false; value: T; error: undefined }
-  | { loading: false; value: undefined; error: Error };
-
-function useAsyncCallback<T>(asyncFn: () => Promise<T>) {
-  const [state, setState] = useState<AsyncState<T>>({
-    loading: false,
-    value: undefined,
-    error: undefined,
-  });
-
-  const execute = useCallback(() => {
-    setState({ loading: true, value: undefined, error: undefined });
-    asyncFn().then(
-      (value) => setState({ loading: false, value, error: undefined }),
-      (error: unknown) =>
-        setState({
-          loading: false,
-          value: undefined,
-          error: error instanceof Error ? error : new Error(String(error)),
-        }),
-    );
-  }, [asyncFn]);
-
-  return [state, execute] as const;
-}
+import { useEffect, useRef, useCallback } from 'react';
+import { useAsyncCallback } from './useAsyncCallback.js';
 
 type CreateChildHandshakeResult<
   IE extends EventMap,
