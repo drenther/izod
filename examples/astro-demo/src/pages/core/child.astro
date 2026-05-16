@@ -1,120 +1,90 @@
 ---
+import ChildLayout from "../../layouts/ChildLayout.astro";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>izod — Child Page</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; }
-      body { font-family: system-ui, sans-serif; padding: 2rem; background: #fafbfc; }
-      h2 { margin-bottom: 0.5rem; font-size: 1.1rem; }
-      .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 1rem; }
-      .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-      input { flex: 1; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-      button { padding: 0.4rem 0.8rem; border: none; border-radius: 4px; background: #16a34a; color: white; cursor: pointer; font-size: 0.9rem; }
-      button:hover { background: #15803d; }
-      button:disabled { background: #86efac; cursor: not-allowed; }
-      .log { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; min-height: 60px; max-height: 150px; overflow-y: auto; }
-      .log-entry { margin-bottom: 0.2rem; }
-      .log-entry.sent { color: #16a34a; }
-      .log-entry.received { color: #2563eb; }
-      .log-entry.system { color: #9333ea; }
-      .log-entry.error { color: #dc2626; }
-      .status { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; margin-bottom: 0.75rem; }
-      .status.pending { background: #fef3c7; color: #92400e; }
-      .status.connected { background: #d1fae5; color: #065f46; }
-      .status.error { background: #fee2e2; color: #991b1b; }
-    </style>
-  </head>
-  <body>
-    <h2>Child iframe</h2>
-    <p class="subtitle">Running inside parent's iframe via izod</p>
+<ChildLayout title="Child iframe" subtitle="Running inside parent's iframe via izod">
+  <span id="status" class="status pending">Waiting for parent...</span>
 
-    <span id="status" class="status pending">Waiting for parent...</span>
+  <div class="controls">
+    <input id="message-input" type="text" placeholder="Reply to parent..." disabled />
+    <button id="send-btn" disabled>Send</button>
+  </div>
 
-    <div class="controls">
-      <input id="message-input" type="text" placeholder="Reply to parent..." disabled />
-      <button id="send-btn" disabled>Send</button>
-    </div>
+  <div id="log" class="log"></div>
 
-    <div id="log" class="log"></div>
+  <script>
+    import { connectToParent } from "@izod/core";
+    import { z } from "zod";
 
-    <script>
-      import { connectToParent } from "@izod/core";
-      import { z } from "zod";
+    const messageSchema = z.object({
+      text: z.string(),
+      timestamp: z.number(),
+    });
 
-      const messageSchema = z.object({
-        text: z.string(),
-        timestamp: z.number(),
-      });
+    const logEl = document.getElementById("log")!;
+    const statusEl = document.getElementById("status")!;
+    const inputEl = document.getElementById("message-input") as HTMLInputElement;
+    const sendBtn = document.getElementById("send-btn") as HTMLButtonElement;
 
-      const logEl = document.getElementById("log")!;
-      const statusEl = document.getElementById("status")!;
-      const inputEl = document.getElementById("message-input") as HTMLInputElement;
-      const sendBtn = document.getElementById("send-btn") as HTMLButtonElement;
+    function appendLog(message: string, type: "sent" | "received" | "system" | "error") {
+      const entry = document.createElement("div");
+      entry.className = `log-entry ${type}`;
+      const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[type];
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${prefix}: ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
 
-      function appendLog(message: string, type: "sent" | "received" | "system" | "error") {
-        const entry = document.createElement("div");
-        entry.className = `log-entry ${type}`;
-        const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[type];
-        entry.textContent = `[${new Date().toLocaleTimeString()}] ${prefix}: ${message}`;
-        logEl.appendChild(entry);
-        logEl.scrollTop = logEl.scrollHeight;
-      }
+    appendLog("Waiting for handshake from parent...", "system");
 
-      appendLog("Waiting for handshake from parent...", "system");
+    const parentInstance = connectToParent({
+      namespace: "izod-demo",
+      inboundEvents: {
+        parentMessage: messageSchema,
+      },
+      outboundEvents: {
+        childMessage: messageSchema,
+      },
+    });
 
-      const parentInstance = connectToParent({
-        namespace: "izod-demo",
-        inboundEvents: {
-          parentMessage: messageSchema,
-        },
-        outboundEvents: {
-          childMessage: messageSchema,
-        },
-      });
+    parentInstance.on("parentMessage", (data) => {
+      appendLog(`${data.text}`, "received");
+    });
 
-      parentInstance.on("parentMessage", (data) => {
-        appendLog(`${data.text}`, "received");
-      });
+    parentInstance
+      .executeHandshake()
+      .then((connection) => {
+        statusEl.textContent = "Connected";
+        statusEl.className = "status connected";
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        appendLog("Handshake complete — connected to parent", "system");
 
-      parentInstance
-        .executeHandshake()
-        .then((connection) => {
-          statusEl.textContent = "Connected";
-          statusEl.className = "status connected";
-          inputEl.disabled = false;
-          sendBtn.disabled = false;
-          appendLog("Handshake complete — connected to parent", "system");
+        function sendMessage() {
+          const text = inputEl.value.trim();
+          if (!text) return;
 
-          function sendMessage() {
-            const text = inputEl.value.trim();
-            if (!text) return;
-
-            connection.emit("childMessage", {
-              text,
-              timestamp: Date.now(),
-            });
-            appendLog(text, "sent");
-            inputEl.value = "";
-            inputEl.focus();
-          }
-
-          sendBtn.addEventListener("click", sendMessage);
-          inputEl.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") sendMessage();
+          connection.emit("childMessage", {
+            text,
+            timestamp: Date.now(),
           });
-        })
-        .catch((error: unknown) => {
-          statusEl.textContent = "Error";
-          statusEl.className = "status error";
-          appendLog(
-            `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
-            "error",
-          );
+          appendLog(text, "sent");
+          inputEl.value = "";
+          inputEl.focus();
+        }
+
+        sendBtn.addEventListener("click", sendMessage);
+        inputEl.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") sendMessage();
         });
-    </script>
-  </body>
-</html>
+      })
+      .catch((error: unknown) => {
+        statusEl.textContent = "Error";
+        statusEl.className = "status error";
+        appendLog(
+          `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+          "error",
+        );
+      });
+  </script>
+</ChildLayout>

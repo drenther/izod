@@ -1,38 +1,8 @@
 ---
+import ChildLayout from "../../layouts/ChildLayout.astro";
 import ReactChild from "../../components/ReactChild";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>izod — React Child Page</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; }
-      body { font-family: system-ui, sans-serif; padding: 2rem; background: #fafbfc; }
-      h2 { margin-bottom: 0.5rem; font-size: 1.1rem; }
-      .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 1rem; }
-      .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-      input { flex: 1; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-      button { padding: 0.4rem 0.8rem; border: none; border-radius: 4px; background: #16a34a; color: white; cursor: pointer; font-size: 0.9rem; }
-      button:hover { background: #15803d; }
-      button:disabled { background: #86efac; cursor: not-allowed; }
-      .log { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; min-height: 60px; max-height: 150px; overflow-y: auto; }
-      .log-entry { margin-bottom: 0.2rem; }
-      .log-entry.sent { color: #16a34a; }
-      .log-entry.received { color: #2563eb; }
-      .log-entry.system { color: #9333ea; }
-      .log-entry.error { color: #dc2626; }
-      .status { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; margin-bottom: 0.75rem; }
-      .status.pending { background: #fef3c7; color: #92400e; }
-      .status.connected { background: #d1fae5; color: #065f46; }
-      .status.error { background: #fee2e2; color: #991b1b; }
-    </style>
-  </head>
-  <body>
-    <h2>React Child iframe</h2>
-    <p class="subtitle">Running inside parent's iframe via @izod/react hooks</p>
-
-    <ReactChild client:only="react" />
-  </body>
-</html>
+<ChildLayout title="React Child iframe" subtitle="Running inside parent's iframe via @izod/react hooks">
+  <ReactChild client:only="react" />
+</ChildLayout>
