@@ -1,0 +1,10 @@
+---
+import ParentLayout from "../../layouts/ParentLayout.astro";
+import ReactParent from "../../components/ReactParent";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<ParentLayout title="React Parent Page" subtitle="Using @izod/react hooks with child.useCreate">
+  <ReactParent base={base} client:only="react" />
+</ParentLayout>

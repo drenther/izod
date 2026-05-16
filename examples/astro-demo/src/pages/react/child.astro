@@ -1,0 +1,8 @@
+---
+import ChildLayout from "../../layouts/ChildLayout.astro";
+import ReactChild from "../../components/ReactChild";
+---
+
+<ChildLayout title="React Child iframe" subtitle="Running inside parent's iframe via @izod/react hooks">
+  <ReactChild client:only="react" />
+</ChildLayout>

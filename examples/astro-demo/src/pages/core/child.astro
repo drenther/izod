@@ -1,0 +1,90 @@
+---
+import ChildLayout from "../../layouts/ChildLayout.astro";
+---
+
+<ChildLayout title="Child iframe" subtitle="Running inside parent's iframe via izod">
+  <span id="status" class="status pending">Waiting for parent...</span>
+
+  <div class="controls">
+    <input id="message-input" type="text" placeholder="Reply to parent..." disabled />
+    <button id="send-btn" disabled>Send</button>
+  </div>
+
+  <div id="log" class="log"></div>
+
+  <script>
+    import { connectToParent } from "@izod/core";
+    import { z } from "zod";
+
+    const messageSchema = z.object({
+      text: z.string(),
+      timestamp: z.number(),
+    });
+
+    const logEl = document.getElementById("log")!;
+    const statusEl = document.getElementById("status")!;
+    const inputEl = document.getElementById("message-input") as HTMLInputElement;
+    const sendBtn = document.getElementById("send-btn") as HTMLButtonElement;
+
+    function appendLog(message: string, type: "sent" | "received" | "system" | "error") {
+      const entry = document.createElement("div");
+      entry.className = `log-entry ${type}`;
+      const prefix = { sent: "↑ SENT", received: "↓ RECV", system: "● SYS", error: "✕ ERR" }[type];
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${prefix}: ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    appendLog("Waiting for handshake from parent...", "system");
+
+    const parentInstance = connectToParent({
+      namespace: "izod-demo",
+      inboundEvents: {
+        parentMessage: messageSchema,
+      },
+      outboundEvents: {
+        childMessage: messageSchema,
+      },
+    });
+
+    parentInstance.on("parentMessage", (data) => {
+      appendLog(`${data.text}`, "received");
+    });
+
+    parentInstance
+      .executeHandshake()
+      .then((connection) => {
+        statusEl.textContent = "Connected";
+        statusEl.className = "status connected";
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        appendLog("Handshake complete — connected to parent", "system");
+
+        function sendMessage() {
+          const text = inputEl.value.trim();
+          if (!text) return;
+
+          connection.emit("childMessage", {
+            text,
+            timestamp: Date.now(),
+          });
+          appendLog(text, "sent");
+          inputEl.value = "";
+          inputEl.focus();
+        }
+
+        sendBtn.addEventListener("click", sendMessage);
+        inputEl.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") sendMessage();
+        });
+      })
+      .catch((error: unknown) => {
+        statusEl.textContent = "Error";
+        statusEl.className = "status error";
+        appendLog(
+          `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+          "error",
+        );
+      });
+  </script>
+</ChildLayout>

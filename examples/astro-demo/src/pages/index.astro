@@ -1,0 +1,41 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>izod — Demo</title>
+    <style is:global>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; }
+      body { font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 3rem 2rem; text-align: center; }
+      h1 { margin-bottom: 0.5rem; }
+      .subtitle { color: #666; margin-bottom: 2rem; }
+      .cards { display: flex; flex-direction: column; gap: 1rem; text-align: left; }
+      a.card { display: block; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 8px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
+      a.card:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1); }
+      .card h2 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+      .card p { color: #666; font-size: 0.9rem; }
+      .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 0.5rem; vertical-align: middle; }
+      .badge.core { background: #dbeafe; color: #1e40af; }
+      .badge.react { background: #e0e7ff; color: #3730a3; }
+    </style>
+  </head>
+  <body>
+    <h1>izod</h1>
+    <p class="subtitle">Type-safe iframe communication with Standard Schema validation</p>
+
+    <div class="cards">
+      <a class="card" href={`${base}core`}>
+        <h2>Core Example <span class="badge core">@izod/core</span></h2>
+        <p>Vanilla TypeScript — direct use of createChild and connectToParent APIs with zod validation.</p>
+      </a>
+
+      <a class="card" href={`${base}react`}>
+        <h2>React Example <span class="badge react">@izod/react</span></h2>
+        <p>React hooks — child.useCreate and parent.useConnect with zod validation.</p>
+      </a>
+    </div>
+  </body>
+</html>

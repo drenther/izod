@@ -1,150 +1,129 @@
 # @izod/react
 
-> NOTE: This is very early stage, documentation is not complete and breaking API changes likely ahead. Please use at your own risk. Lock your version in case you use. (Even though I will adhere to semver for updates)
-
 ![Bundle Size](https://img.shields.io/bundlephobia/minzip/@izod/react) ![npm version](https://badgen.net/npm/v/@izod/react) ![types](https://badgen.net/npm/types/@izod/react)
 
-`izod` leverages [zod](https://github.com/colinhacks/zod) to provide a type safe Promise oriented API to manage iframe communication.
-
-This is the react adapter built on top of `@izod/core`
+React hooks for type-safe iframe communication. Wraps [`@izod/core`](../core) with React lifecycle management.
 
 ## Installation
 
 ```sh
-npm i zod @izod/core @izod/react
+pnpm add @izod/core @izod/react
 ```
 
-## Usage
+`react` (>=16.8) and `@izod/core` are peer dependencies.
 
-```ts
-// common.ts
+## API
 
-import { z } from 'zod';
-import type { EventMap } from '@izod/core';
+### `child.useCreate(params)`
 
-export const parentOriginEvents = {
-  askQuestion: z.object({
-    question: z.string(),
-  }),
-  shout: z.object({
-    message: z.string(),
-  }),
-} as const satisfies EventMap;
-
-export const childOriginEvents = {
-  answerQuestion: z.object({
-    answer: z.string(),
-  }),
-  whisper: z.object({
-    message: z.string(),
-  }),
-} as const satisfies EventMap;
-```
+Hook for the **parent** component to create and manage a child iframe.
 
 ```tsx
-// parent.tsx
-
 import { child } from '@izod/react';
 
 function Parent() {
-  //  accepts all the parameters that `createChild` from @izod/core does
-  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
-  // `on` can be used to attach event listeners
-  const { on, api, executeHandshake } = child.useCreate({
-    container: document.body, // required
-    url: 'http://127.0.0.1:3010', // required
-    inboundEvents: parentOriginEvents, // optional
-    outboundEvents: childOriginEvents, // optional
-    handshakeOptions: {
-      // optional
-      maxHandshakeRequests: 10, // default 5
-      handshakeRetryInterval: 100, // default 1000
-    },
-    onHandshakeComplete(api) {
-      // callback called when handshake is successful
-    },
-    onHandshakeError(error) {
-      // callback called when handshake fails
-    },
-    // remove the iframe on component unmount
-    destroyOnUnmount: false, // default false - optional
-  });
+  const [container] = useState(() => document.createElement('div'));
 
-  // `child.useEventListener` takes care of this boilerplate for you but is not fully type safe as of now
-  // to add event listeners
-  // prefer this over `onHandshakeComplete` for attaching event listeners
+  const { on, executeHandshake, api, isHandshakeComplete, isHandshakePending, handshakeError } =
+    child.useCreate({
+      container, // DOM element for the iframe
+      url: 'https://child.example.com',
+      namespace: 'my-app', // optional
+      inboundEvents: childEvents, // schemas for events FROM the child
+      outboundEvents: parentEvents, // schemas for events TO the child
+      iframeAttributes: {
+        // optional
+        style: 'width:100%;height:400px;border:none',
+      },
+      handshakeOptions: {
+        // optional
+        maxHandshakeRequests: 10,
+        handshakeRetryInterval: 100,
+      },
+      onHandshakeComplete: (api) => {
+        console.log('Connected!');
+      },
+      onHandshakeError: (error) => {
+        console.error('Handshake failed:', error);
+      },
+      destroyOnUnmount: true, // default: true — remove iframe on unmount
+    });
+
   useEffect(() => {
-    if (api) {
-      // function is returned from `.on` that can be called to unsubscribe
-      const off = on('askQuestion', (data) => {
-        console.log('Question: ', data.question);
-      });
+    const off = on('childMessage', (data) => {
+      console.log(data);
+    });
+    return off;
+  }, [on]);
 
-      // return that from the useEffect for cleanup
-      return off;
-    }
-  }, [api]);
-
-  const ranOnce = useRef(false);
   useEffect(() => {
-    if (ranOnce.current) {
-      return;
-    }
-
     executeHandshake();
-    ranOnce.current = true;
-  }, []);
+  }, [executeHandshake]);
 
-  const shout = () => {
-    api.emit('shout', { message: 'Hello' });
-  };
+  return (
+    <>
+      <div
+        ref={(node) => {
+          if (node && !node.contains(container)) node.appendChild(container);
+        }}
+      />
+      {isHandshakeComplete && (
+        <button onClick={() => api.emit('parentMessage', { text: 'hello' })}>Send</button>
+      )}
+    </>
+  );
 }
 ```
 
-```tsx
-// child.tsx
+**Returns:**
 
+| Property              | Type                              | Description                                    |
+| --------------------- | --------------------------------- | ---------------------------------------------- |
+| `on`                  | `(event, handler) => unsubscribe` | Register inbound event listener                |
+| `executeHandshake`    | `() => void`                      | Start the handshake                            |
+| `api`                 | `object \| undefined`             | Handshake result with `emit()` and `destroy()` |
+| `isHandshakeComplete` | `boolean`                         | Whether handshake succeeded                    |
+| `isHandshakePending`  | `boolean`                         | Whether handshake is in progress               |
+| `handshakeError`      | `Error \| undefined`              | Handshake error, if any                        |
+
+### `parent.useConnect(params)`
+
+Hook for the **child** component (inside the iframe) to connect back to the parent.
+
+```tsx
 import { parent } from '@izod/react';
 
 function Child() {
-  // `api` is the same that is returned from `connectToParent.executeHandshake` from @izod/core
-  const { on, api, executeHandshake } = parent.useConnect({
-    inboundEvents: parentOriginEvents,
-    outboundEvents: childOriginEvents,
-    onHandshakeComplete(api) {
-      // callback called when handshake is successful
-    },
-    onHandshakeError(error) {
-      // callback called when handshake fails
-    },
-  });
+  const { on, executeHandshake, api, isHandshakeComplete, isHandshakePending, handshakeError } =
+    parent.useConnect({
+      namespace: 'my-app',
+      inboundEvents: parentEvents,
+      outboundEvents: childEvents,
+      onHandshakeComplete: (api) => {
+        console.log('Connected to parent!');
+      },
+      onHandshakeError: (error) => {
+        console.error('Failed:', error);
+      },
+    });
 
-  // `parent.useEventListener` takes care of this boilerplate for you but is not fully type safe as of now
-  // to add event listeners
   useEffect(() => {
-    // function is returned from `.on` that can be called to unsubscribe
-    if (api) {
-      const off = api.on('shout', (data) => {
-        console.log(`Parent shouted: ${data.message}`);
-      });
-
-      // return that from the useEffect for cleanup
-      return off;
-    }
-  }, [api]);
-
-  const ranOnce = useRef(false);
-  useEffect(() => {
-    if (ranOnce.current) {
-      return;
-    }
-
     executeHandshake();
-    ranOnce.current = true;
-  }, []);
+  }, [executeHandshake]);
 
-  const whisper = () => {
-    api.emit('whisper', { message: 'Hi' });
-  };
+  useEffect(() => {
+    const off = on('parentMessage', (data) => {
+      console.log(data);
+    });
+    return off;
+  }, [on]);
+
+  return <div>{isHandshakeComplete ? 'Connected' : 'Connecting...'}</div>;
 }
 ```
+
+**Returns:** same shape as `child.useCreate`.
+
+## License
+
+MIT
