@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type AsyncState<T> =
-  | { loading: boolean }
-  | { loading: boolean; value: T }
-  | { loading: boolean; error: Error };
+  | { loading: boolean; error?: undefined; value?: undefined }
+  | { loading: true; error?: Error; value?: T }
+  | { loading: false; error: Error; value?: undefined }
+  | { loading: false; error?: undefined; value: T };
 
 type FunctionReturningPromise = (...args: never[]) => Promise<unknown>;
 

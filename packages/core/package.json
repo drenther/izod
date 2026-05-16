@@ -42,11 +42,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@standard-schema/spec": "catalog:",
     "crelt": "1.0.6",
     "nanoid": "5.1.5"
   },
   "devDependencies": {
-    "@standard-schema/spec": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "happy-dom": "catalog:",
     "tsdown": "catalog:",
