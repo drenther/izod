@@ -3,6 +3,6 @@ import react from '@astrojs/react';
 
 export default defineConfig({
   site: 'https://drenther.github.io',
-  base: '/izod',
+  base: '/izod/',
   integrations: [react()],
 });
